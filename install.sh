@@ -1348,6 +1348,7 @@ install_x-ui() {
             echo -e "${red}Download x-ui $1 failed, please check if the version exists ${plain}"
             exit 1
         fi
+    fi
     curl -4fLRo /usr/bin/x-ui-temp https://raw.githubusercontent.com/lgdglgc/3x-ui/main/x-ui.sh
     if [[ $? -ne 0 ]]; then
         echo -e "${red}Failed to download x-ui.sh${plain}"
