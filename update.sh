@@ -90,6 +90,24 @@ function LOGE() {
 function LOGI() {
     echo -e "${green}[INF] $* ${plain}"
 }
+function LOGW() {
+    echo -e "${yellow}[WRN] $* ${plain}"
+}
+confirm() {
+    if [[ $# > 1 ]]; then
+        echo && read -rp "$1 [Default $2]: " temp
+        if [[ "${temp}" == "" ]]; then
+            temp=$2
+        fi
+    else
+        read -rp "$1 [y/n]: " temp
+    fi
+    if [[ "${temp}" == "y" || "${temp}" == "Y" ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
 
 # Port helpers
 is_port_in_use() {

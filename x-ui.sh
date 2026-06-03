@@ -18,6 +18,9 @@ function LOGE() {
 function LOGI() {
     echo -e "${green}[INF] $* ${plain}"
 }
+function LOGW() {
+    echo -e "${yellow}[WRN] $* ${plain}"
+}
 
 # Port helpers: detect listener and owning process (best effort)
 is_port_in_use() {
