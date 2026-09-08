@@ -31,7 +31,7 @@ type PanelUpdateInfo struct {
 }
 
 const (
-	panelUpdaterURL      = "https://raw.githubusercontent.com/MHSanaei/3x-ui/main/update.sh"
+	panelUpdaterURL      = "https://raw.githubusercontent.com/lgdglgc/3x-ui/main/update.sh"
 	maxPanelUpdaterBytes = 2 << 20
 )
 
@@ -57,17 +57,13 @@ func (s *PanelService) RestartPanel(delay time.Duration) error {
 	return nil
 }
 
-// GetUpdateInfo checks GitHub for the latest 3x-ui release.
+// GetUpdateInfo returns the current panel version and keeps version locked.
 func (s *PanelService) GetUpdateInfo() (*PanelUpdateInfo, error) {
-	latest, err := fetchLatestPanelVersion()
-	if err != nil {
-		return nil, err
-	}
 	current := config.GetVersion()
 	return &PanelUpdateInfo{
 		CurrentVersion:  current,
-		LatestVersion:   latest,
-		UpdateAvailable: isNewerVersion(latest, current),
+		LatestVersion:   current,
+		UpdateAvailable: false,
 	}, nil
 }
 
@@ -169,24 +165,7 @@ func downloadPanelUpdater() (string, error) {
 }
 
 func fetchLatestPanelVersion() (string, error) {
-	client := (&SettingService{}).NewProxiedHTTPClient(10 * time.Second)
-	resp, err := client.Get("https://api.github.com/repos/MHSanaei/3x-ui/releases/latest")
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("GitHub API returned status %d: %s", resp.StatusCode, resp.Status)
-	}
-
-	var release Release
-	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
-		return "", err
-	}
-	if release.TagName == "" {
-		return "", fmt.Errorf("latest panel release tag is empty")
-	}
-	return release.TagName, nil
+	return config.GetVersion(), nil
 }
 
 func resolveUpdateFolders() (string, string) {

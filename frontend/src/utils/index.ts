@@ -860,11 +860,11 @@ export class LanguageManager {
       if (LanguageManager.isSupportLanguage(lang)) {
         CookieManager.setCookie('lang', lang);
       } else {
-        CookieManager.setCookie('lang', 'en-US');
+        CookieManager.setCookie('lang', 'zh-CN');
         window.location.reload();
       }
     } else {
-      CookieManager.setCookie('lang', 'en-US');
+      CookieManager.setCookie('lang', 'zh-CN');
       window.location.reload();
     }
 
@@ -873,7 +873,7 @@ export class LanguageManager {
 
   static setLanguage(language: string): void {
     if (!LanguageManager.isSupportLanguage(language)) {
-      language = 'en-US';
+      language = 'zh-CN';
     }
     CookieManager.setCookie('lang', language);
     window.location.reload();

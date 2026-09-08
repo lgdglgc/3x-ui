@@ -48,32 +48,6 @@
   flex-shrink: 0;
 }
 
-.sidebar-donate {
-  background: transparent;
-  border: none;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--ant-color-text-secondary);
-  text-decoration: none;
-  flex-shrink: 0;
-  transition: background-color 0.2s, transform 0.15s, color 0.2s;
-}
-
-.sidebar-donate:hover,
-.sidebar-donate:focus-visible {
-  background-color: rgba(236, 72, 153, 0.12);
-  color: #ec4899;
-  transform: scale(1.08);
-  outline: none;
-}
-
-.sidebar-donate .anticon {
-  font-size: 16px;
-}
 
 .sidebar-theme-cycle {
   background: transparent;

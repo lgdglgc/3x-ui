@@ -48,9 +48,9 @@ elif [[ -f /usr/lib/os-release ]]; then
     source /usr/lib/os-release
     release=$ID
 else
-    _fail "Failed to check the system OS, please contact the author!"
+    _fail "无法检测当前操作系统发行版，请检查系统环境！"
 fi
-echo "The OS release is: $release"
+echo "当前操作系统发行版: $release"
 
 arch() {
     case "$(uname -m)" in
@@ -61,11 +61,11 @@ arch() {
         armv6* | armv6) echo 'armv6' ;;
         armv5* | armv5) echo 'armv5' ;;
         s390x) echo 's390x' ;;
-        *) echo -e "${red}Unsupported CPU architecture!${plain}" && rm -f "${cur_dir}/${script_name}" > /dev/null 2>&1 && exit 2 ;;
+        *) echo -e "${red}当前 CPU 架构不受支持！${plain}" && rm -f "${cur_dir}/${script_name}" > /dev/null 2>&1 && exit 2 ;;
     esac
 }
 
-echo "Arch: $(arch)"
+echo "当前系统架构: $(arch)"
 
 # Simple helpers
 is_ipv4() {
@@ -206,7 +206,7 @@ stop_occupying_services() {
     if is_port_in_use "${port}"; then
         for svc in nginx apache2 caddy; do
             if systemctl is-active --quiet ${svc} 2>/dev/null; then
-                LOGI "Stopping ${svc} temporarily to free port ${port}..."
+                LOGI "正在临时停止 ${svc} 服务以释放端口 ${port}..."
                 systemctl stop ${svc} >/dev/null 2>&1
                 stopped_services="${stopped_services} ${svc}"
             fi
@@ -218,7 +218,7 @@ stop_occupying_services() {
 start_occupying_services() {
     local svcs="$1"
     for svc in ${svcs}; do
-        LOGI "Restarting ${svc}..."
+        LOGI "正在恢复重启 ${svc} 服务..."
         systemctl start ${svc} >/dev/null 2>&1
     done
 }
@@ -256,7 +256,7 @@ load_xui_env() {
 }
 
 install_base() {
-    echo -e "${green}Updating and install dependency packages...${plain}"
+    echo -e "${green}正在更新并安装依赖软件包...${plain}"
     case "${release}" in
         ubuntu | debian | armbian)
             apt-get update > /dev/null 2>&1 && apt-get install -y -q cron curl tar tzdata socat openssl > /dev/null 2>&1
@@ -287,22 +287,22 @@ install_base() {
 }
 
 install_acme() {
-    echo -e "${green}Installing acme.sh for SSL certificate management...${plain}"
+    echo -e "${green}正在安装 acme.sh 用于 SSL 证书管理...${plain}"
     if command -v ~/.acme.sh/acme.sh &> /dev/null || [ -f "$HOME/.acme.sh/acme.sh" ]; then
-        echo -e "${green}acme.sh is already installed.${plain}"
+        echo -e "${green}acme.sh 已安装，无需重复安装。${plain}"
         return 0
     fi
     cd ~ || return 1
     curl -sL https://get.acme.sh | sh > /dev/null 2>&1
     if [ $? -ne 0 ] || ! [ -f "$HOME/.acme.sh/acme.sh" ]; then
-        echo -e "${yellow}Official get.acme.sh download failed. Trying GitHub mirror...${plain}"
+        echo -e "${yellow}acme.sh 官方源下载失败，尝试切换镜像加速源...${plain}"
         curl -sL https://mirror.ghproxy.com/https://raw.githubusercontent.com/acmesh-official/acme.sh/master/acme.sh | sh > /dev/null 2>&1
     fi
     if [ -f "$HOME/.acme.sh/acme.sh" ] || command -v ~/.acme.sh/acme.sh &> /dev/null; then
-        echo -e "${green}acme.sh installed successfully${plain}"
+        echo -e "${green}acme.sh 安装成功${plain}"
         return 0
     else
-        echo -e "${red}Failed to install acme.sh${plain}"
+        echo -e "${red}acme.sh 安装失败${plain}"
         return 1
     fi
 }
@@ -313,13 +313,13 @@ setup_ssl_certificate() {
     local existing_port="$3"
     local existing_webBasePath="$4"
 
-    echo -e "${green}Setting up SSL certificate...${plain}"
+    echo -e "${green}正在配置 SSL 证书...${plain}"
 
     # Check if acme.sh is installed
     if ! command -v ~/.acme.sh/acme.sh &> /dev/null; then
         install_acme
         if [ $? -ne 0 ]; then
-            echo -e "${yellow}Failed to install acme.sh, skipping SSL setup${plain}"
+            echo -e "${yellow}acme.sh 安装失败，跳过 SSL 证书配置${plain}"
             return 1
         fi
     fi
@@ -329,15 +329,15 @@ setup_ssl_certificate() {
     mkdir -p "$certPath"
 
     # Issue certificate
-    echo -e "${green}Issuing SSL certificate for ${domain}...${plain}"
-    echo -e "${yellow}Note: Port 80 must be open and accessible from the internet${plain}"
+    echo -e "${green}正在为域名 ${domain} 申请 SSL 证书...${plain}"
+    echo -e "${yellow}提示: 请确保 80 端口已开放并可从公网访问${plain}"
 
     ~/.acme.sh/acme.sh --set-default-ca --server letsencrypt --force > /dev/null 2>&1
     ~/.acme.sh/acme.sh --issue -d ${domain} --listen-v6 --standalone --httpport 80 --force
 
     if [ $? -ne 0 ]; then
-        echo -e "${yellow}Failed to issue certificate for ${domain}${plain}"
-        echo -e "${yellow}Please ensure port 80 is open and try again later with: x-ui${plain}"
+        echo -e "${yellow}为域名 ${domain} 申请证书失败${plain}"
+        echo -e "${yellow}请确保 80 端口畅通，稍后可在终端运行 x-ui 重新申请${plain}"
         rm -rf ~/.acme.sh/${domain} 2> /dev/null
         rm -rf "$certPath" 2> /dev/null
         return 1
@@ -350,7 +350,7 @@ setup_ssl_certificate() {
         --reloadcmd "systemctl restart x-ui" > /dev/null 2>&1
 
     if [ $? -ne 0 ]; then
-        echo -e "${yellow}Failed to install certificate${plain}"
+        echo -e "${yellow}证书安装失败${plain}"
         return 1
     fi
 
@@ -365,10 +365,10 @@ setup_ssl_certificate() {
 
     if [[ -f "$webCertFile" && -f "$webKeyFile" ]]; then
         ${xui_folder}/x-ui cert -webCert "$webCertFile" -webCertKey "$webKeyFile" > /dev/null 2>&1
-        echo -e "${green}SSL certificate installed and configured successfully!${plain}"
+        echo -e "${green}SSL 证书安装并配置成功！${plain}"
         return 0
     else
-        echo -e "${yellow}Certificate files not found${plain}"
+        echo -e "${yellow}未找到证书文件${plain}"
         return 1
     fi
 }
@@ -767,25 +767,25 @@ ssl_cert_issue() {
     systemctl start x-ui 2> /dev/null || rc-service x-ui start 2> /dev/null
 
     # Prompt user to set panel paths after successful certificate installation
-    read -rp "Would you like to set this certificate for the panel? (y/n): " setPanel
+    read -rp "是否将此证书应用于当前面板？(y/n): " setPanel
     if [[ "$setPanel" == "y" || "$setPanel" == "Y" ]]; then
         local webCertFile="/root/cert/${domain}/fullchain.pem"
         local webKeyFile="/root/cert/${domain}/privkey.pem"
 
         if [[ -f "$webCertFile" && -f "$webKeyFile" ]]; then
             ${xui_folder}/x-ui cert -webCert "$webCertFile" -webCertKey "$webKeyFile"
-            LOGI "Certificate paths set for the panel"
-            LOGI "Certificate File: $webCertFile"
-            LOGI "Private Key File: $webKeyFile"
+            LOGI "已为面板设置证书路径"
+            LOGI "证书公钥文件: $webCertFile"
+            LOGI "证书私钥文件: $webKeyFile"
             echo ""
-            echo -e "${green}Access URL: https://${domain}:${existing_port}/${existing_webBasePath}${plain}"
-            LOGI "Panel will restart to apply SSL certificate..."
+            echo -e "${green}访问链接: https://${domain}:${existing_port}/${existing_webBasePath}${plain}"
+            LOGI "面板即将重启以应用 SSL 证书..."
             systemctl restart x-ui 2> /dev/null || rc-service x-ui restart 2> /dev/null
         else
-            LOGE "Error: Certificate or private key file not found for domain: $domain."
+            LOGE "错误: 未找到域名 $domain 的证书或私钥文件。"
         fi
     else
-        LOGI "Skipping panel path setting."
+        LOGI "跳过为面板配置证书路径。"
     fi
 
     return 0
@@ -1066,21 +1066,14 @@ update_x-ui() {
 
     echo -e "${green}正在下载新版本的 x-ui...${plain}"
 
-    tag_version=$(${curl_bin} -Ls "https://api.github.com/repos/MHSanaei/3x-ui/releases/latest" 2> /dev/null | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
-    if [[ ! -n "$tag_version" ]]; then
-        echo -e "${yellow}尝试使用 IPv4 获取版本信息...${plain}"
-        tag_version=$(${curl_bin} -4 -Ls "https://api.github.com/repos/MHSanaei/3x-ui/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
-        if [[ ! -n "$tag_version" ]]; then
-            _fail "错误: 获取 x-ui 版本失败，可能是由于 GitHub API 限制，请稍后重试"
-        fi
-    fi
-    echo -e "获取到 x-ui 最新版本: ${tag_version}，开始安装..."
-    ${curl_bin} -fLRo ${xui_folder}-linux-$(arch).tar.gz https://github.com/MHSanaei/3x-ui/releases/download/${tag_version}/x-ui-linux-$(arch).tar.gz 2> /dev/null
+    tag_version="v3.4.2"
+    echo -e "固定更新至 x-ui 面板版本: ${tag_version}，开始更新..."
+    ${curl_bin} -fLRo ${xui_folder}-linux-$(arch).tar.gz https://github.com/lgdglgc/3x-ui/releases/download/${tag_version}/x-ui-linux-$(arch).tar.gz 2> /dev/null
     if [[ $? -ne 0 ]]; then
-        echo -e "${yellow}尝试使用 IPv4 获取版本信息...${plain}"
-        ${curl_bin} -4fLRo ${xui_folder}-linux-$(arch).tar.gz https://github.com/MHSanaei/3x-ui/releases/download/${tag_version}/x-ui-linux-$(arch).tar.gz 2> /dev/null
+        echo -e "${yellow}尝试使用 IPv4 下载...${plain}"
+        ${curl_bin} -4fLRo ${xui_folder}-linux-$(arch).tar.gz https://github.com/lgdglgc/3x-ui/releases/download/${tag_version}/x-ui-linux-$(arch).tar.gz 2> /dev/null
         if [[ $? -ne 0 ]]; then
-            _fail "错误: 下载 x-ui 失败，请确保您的服务器可以正常访问 GitHub"
+            _fail "错误: 下载 x-ui 失败，请确保您的服务器可以正常访问网络"
         fi
     fi
 
@@ -1267,6 +1260,6 @@ update_x-ui() {
 └────────────────────────────────────────────────────────────────┘"
 }
 
-echo -e "${green}Running...${plain}"
+echo -e "${green}正在执行更新流程...${plain}"
 install_base
 update_x-ui $1

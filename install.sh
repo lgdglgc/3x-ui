@@ -40,7 +40,7 @@ xui_folder="${XUI_MAIN_FOLDER:=/usr/local/x-ui}"
 xui_service="${XUI_SERVICE:=/etc/systemd/system}"
 
 # check root
-[[ $EUID -ne 0 ]] && echo -e "${red}Fatal error: ${plain} Please run this script with root privilege \n " && exit 1
+[[ $EUID -ne 0 ]] && echo -e "${red}严重错误: ${plain} 请使用 root 超级用户权限运行此脚本！\n " && exit 1
 
 # Check OS and set release variable
 if [[ -f /etc/os-release ]]; then
@@ -50,10 +50,10 @@ elif [[ -f /usr/lib/os-release ]]; then
     source /usr/lib/os-release
     release=$ID
 else
-    echo "Failed to check the system OS, please contact the author!" >&2
+    echo "无法检测当前操作系统发行版，请检查系统环境！" >&2
     exit 1
 fi
-echo "The OS release is: $release"
+echo "当前操作系统发行版: $release"
 
 arch() {
     case "$(uname -m)" in
@@ -64,11 +64,11 @@ arch() {
         armv6* | armv6) echo 'armv6' ;;
         armv5* | armv5) echo 'armv5' ;;
         s390x) echo 's390x' ;;
-        *) echo -e "${green}Unsupported CPU architecture! ${plain}" && rm -f install.sh && exit 1 ;;
+        *) echo -e "${red}当前 CPU 架构不受支持！${plain}" && rm -f install.sh && exit 1 ;;
     esac
 }
 
-echo "Arch: $(arch)"
+echo "当前系统架构: $(arch)"
 
 # Simple helpers
 is_ipv4() {
@@ -181,7 +181,7 @@ stop_occupying_services() {
     if is_port_in_use "${port}"; then
         for svc in nginx apache2 caddy; do
             if systemctl is-active --quiet ${svc} 2>/dev/null; then
-                LOGI "Stopping ${svc} temporarily to free port ${port}..."
+                LOGI "正在临时停止 ${svc} 服务以释放端口 ${port}..."
                 systemctl stop ${svc} >/dev/null 2>&1
                 stopped_services="${stopped_services} ${svc}"
             fi
@@ -193,7 +193,7 @@ stop_occupying_services() {
 start_occupying_services() {
     local svcs="$1"
     for svc in ${svcs}; do
-        LOGI "Restarting ${svc}..."
+        LOGI "正在恢复重启 ${svc} 服务..."
         systemctl start ${svc} >/dev/null 2>&1
     done
 }
@@ -280,7 +280,7 @@ install_postgres_local() {
             rc-service postgresql start >&2 || return 1
             ;;
         *)
-            echo -e "${red}Unsupported distro for automatic PostgreSQL install: ${release}${plain}" >&2
+            echo -e "${red}当前系统暂不支持自动安装 PostgreSQL: ${release}${plain}" >&2
             return 1
             ;;
     esac
@@ -333,7 +333,7 @@ PG_PORT=${pg_port}
 PG_DB=${pg_db}
 EOF
             umask "${prev_umask}"
-            echo -e "${red}Failed to write PostgreSQL credentials to ${PG_CRED_FILE}${plain}" >&2
+            echo -e "${red}写入 PostgreSQL 凭据到 ${PG_CRED_FILE} 失败${plain}" >&2
             return 1
         fi
         umask "${prev_umask}"
@@ -347,7 +347,7 @@ ensure_pg_client() {
     if command -v pg_dump > /dev/null 2>&1 && command -v pg_restore > /dev/null 2>&1; then
         return 0
     fi
-    echo -e "${yellow}Installing PostgreSQL client tools (pg_dump/pg_restore) for in-panel backup...${plain}" >&2
+    echo -e "${yellow}正在安装 PostgreSQL 客户端工具 (pg_dump/pg_restore) 以支持面板备份...${plain}" >&2
     case "${release}" in
         ubuntu | debian | armbian)
             apt-get update >&2 && apt-get install -y -q postgresql-client >&2 || return 1
@@ -379,22 +379,22 @@ ensure_pg_client() {
 }
 
 install_acme() {
-    echo -e "${green}Installing acme.sh for SSL certificate management...${plain}"
+    echo -e "${green}正在安装 acme.sh 用于 SSL 证书管理...${plain}"
     if command -v ~/.acme.sh/acme.sh &> /dev/null || [ -f "$HOME/.acme.sh/acme.sh" ]; then
-        echo -e "${green}acme.sh is already installed.${plain}"
+        echo -e "${green}acme.sh 已安装，无需重复安装。${plain}"
         return 0
     fi
     cd ~ || return 1
     curl -sL https://get.acme.sh | sh > /dev/null 2>&1
     if [ $? -ne 0 ] || ! [ -f "$HOME/.acme.sh/acme.sh" ]; then
-        echo -e "${yellow}Official get.acme.sh download failed. Trying GitHub mirror...${plain}"
+        echo -e "${yellow}acme.sh 官方源下载失败，尝试切换镜像加速源...${plain}"
         curl -sL https://mirror.ghproxy.com/https://raw.githubusercontent.com/acmesh-official/acme.sh/master/acme.sh | sh > /dev/null 2>&1
     fi
     if [ -f "$HOME/.acme.sh/acme.sh" ] || command -v ~/.acme.sh/acme.sh &> /dev/null; then
-        echo -e "${green}acme.sh installed successfully${plain}"
+        echo -e "${green}acme.sh 安装成功${plain}"
         return 0
     else
-        echo -e "${red}Failed to install acme.sh${plain}"
+        echo -e "${red}acme.sh 安装失败${plain}"
         return 1
     fi
 }
@@ -405,13 +405,13 @@ setup_ssl_certificate() {
     local existing_port="$3"
     local existing_webBasePath="$4"
 
-    echo -e "${green}Setting up SSL certificate...${plain}"
+    echo -e "${green}正在配置 SSL 证书...${plain}"
 
     # Check if acme.sh is installed
     if ! command -v ~/.acme.sh/acme.sh &> /dev/null; then
         install_acme
         if [ $? -ne 0 ]; then
-            echo -e "${yellow}Failed to install acme.sh, skipping SSL setup${plain}"
+            echo -e "${yellow}acme.sh 安装失败，跳过 SSL 证书配置${plain}"
             return 1
         fi
     fi
@@ -421,15 +421,15 @@ setup_ssl_certificate() {
     mkdir -p "$certPath"
 
     # Issue certificate
-    echo -e "${green}Issuing SSL certificate for ${domain}...${plain}"
-    echo -e "${yellow}Note: Port 80 must be open and accessible from the internet${plain}"
+    echo -e "${green}正在为域名 ${domain} 申请 SSL 证书...${plain}"
+    echo -e "${yellow}提示: 请确保 80 端口已开放并可从公网访问${plain}"
 
     ~/.acme.sh/acme.sh --set-default-ca --server letsencrypt --force > /dev/null 2>&1
     ~/.acme.sh/acme.sh --issue -d ${domain} --listen-v6 --standalone --httpport 80 --force
 
     if [ $? -ne 0 ]; then
-        echo -e "${yellow}Failed to issue certificate for ${domain}${plain}"
-        echo -e "${yellow}Please ensure port 80 is open and try again later with: x-ui${plain}"
+        echo -e "${yellow}为域名 ${domain} 申请证书失败${plain}"
+        echo -e "${yellow}请确保 80 端口畅通，稍后可在终端运行 x-ui 重新申请${plain}"
         rm -rf ~/.acme.sh/${domain} 2> /dev/null
         rm -rf "$certPath" 2> /dev/null
         return 1
@@ -442,7 +442,7 @@ setup_ssl_certificate() {
         --reloadcmd "systemctl restart x-ui" > /dev/null 2>&1
 
     if [ $? -ne 0 ]; then
-        echo -e "${yellow}Failed to install certificate${plain}"
+        echo -e "${yellow}证书安装失败${plain}"
         return 1
     fi
 
@@ -458,10 +458,10 @@ setup_ssl_certificate() {
 
     if [[ -f "$webCertFile" && -f "$webKeyFile" ]]; then
         ${xui_folder}/x-ui cert -webCert "$webCertFile" -webCertKey "$webKeyFile" > /dev/null 2>&1
-        echo -e "${green}SSL certificate installed and configured successfully!${plain}"
+        echo -e "${green}SSL 证书安装并配置成功！${plain}"
         return 0
     else
-        echo -e "${yellow}Certificate files not found${plain}"
+        echo -e "${yellow}未找到证书文件${plain}"
         return 1
     fi
 }
@@ -1235,7 +1235,7 @@ EOF
             echo -e "${green}网页根路径:  /${config_webBasePath}${plain}"
             echo -e "${green}面板数据库:  ${db_label}${plain}"
             echo -e "${green}访问链接:    ${SSL_SCHEME}://${SSL_HOST}:${config_port}/${config_webBasePath}${plain}"
-            echo -e "${green}API Token:   ${config_apiToken}${plain}"
+            echo -e "${green}API 访问令牌: ${config_apiToken}${plain}"
             echo -e "${green}═══════════════════════════════════════════${plain}"
             echo -e "${yellow}⚠ 重要提示: 请妥善保管好您的以上登录凭证！${plain}"
             if [[ "$SSL_SCHEME" == "https" ]]; then
@@ -1334,19 +1334,11 @@ install_x-ui() {
 
     # Download resources
     if [ $# == 0 ]; then
-        tag_version=$(curl -Ls "https://api.github.com/repos/MHSanaei/3x-ui/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
-        if [[ ! -n "$tag_version" ]]; then
-            echo -e "${yellow}Trying to fetch version with IPv4...${plain}"
-            tag_version=$(curl -4 -Ls "https://api.github.com/repos/MHSanaei/3x-ui/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
-            if [[ ! -n "$tag_version" ]]; then
-                echo -e "${red}Failed to fetch x-ui version, it may be due to GitHub API restrictions, please try it later${plain}"
-                exit 1
-            fi
-        fi
-        echo -e "Got x-ui latest version: ${tag_version}, beginning the installation..."
-        curl -4fLRo ${xui_folder}-linux-$(arch).tar.gz https://github.com/MHSanaei/3x-ui/releases/download/${tag_version}/x-ui-linux-$(arch).tar.gz
+        tag_version="v3.4.2"
+        echo -e "固定安装 x-ui 面板版本: ${tag_version}，开始安装..."
+        curl -4fLRo ${xui_folder}-linux-$(arch).tar.gz https://github.com/lgdglgc/3x-ui/releases/download/${tag_version}/x-ui-linux-$(arch).tar.gz
         if [[ $? -ne 0 ]]; then
-            echo -e "${red}Downloading x-ui failed, please be sure that your server can access GitHub ${plain}"
+            echo -e "${red}下载 x-ui 失败，请确保您的服务器可以正常访问网络${plain}"
             exit 1
         fi
     else
@@ -1355,21 +1347,21 @@ install_x-ui() {
         min_version="2.3.5"
 
         if [[ "$(printf '%s\n' "$min_version" "$tag_version_numeric" | sort -V | head -n1)" != "$min_version" ]]; then
-            echo -e "${red}Please use a newer version (at least v2.3.5). Exiting installation.${plain}"
+            echo -e "${red}请使用较新版本 (至少 v2.3.5)。退出安装。${plain}"
             exit 1
         fi
 
-        url="https://github.com/MHSanaei/3x-ui/releases/download/${tag_version}/x-ui-linux-$(arch).tar.gz"
-        echo -e "Beginning to install x-ui $1"
+        url="https://github.com/lgdglgc/3x-ui/releases/download/${tag_version}/x-ui-linux-$(arch).tar.gz"
+        echo -e "开始安装 x-ui $1..."
         curl -4fLRo ${xui_folder}-linux-$(arch).tar.gz ${url}
         if [[ $? -ne 0 ]]; then
-            echo -e "${red}Download x-ui $1 failed, please check if the version exists ${plain}"
+            echo -e "${red}下载 x-ui $1 失败，请检查该版本是否存在${plain}"
             exit 1
         fi
     fi
     curl -4fLRo /usr/bin/x-ui-temp https://raw.githubusercontent.com/lgdglgc/3x-ui/main/x-ui.sh
     if [[ $? -ne 0 ]]; then
-        echo -e "${red}Failed to download x-ui.sh${plain}"
+        echo -e "${red}下载 x-ui.sh 管理脚本失败${plain}"
         exit 1
     fi
 
@@ -1410,18 +1402,18 @@ install_x-ui() {
             if ! grep -q "x-ui/x-ui.db" "/etc/.gitignore"; then
                 echo "" >> "/etc/.gitignore"
                 echo "x-ui/x-ui.db" >> "/etc/.gitignore"
-                echo -e "${green}Added x-ui.db to /etc/.gitignore for etckeeper${plain}"
+                echo -e "${green}已将 x-ui.db 添加至 /etc/.gitignore (针对 etckeeper)${plain}"
             fi
         else
             echo "x-ui/x-ui.db" > "/etc/.gitignore"
-            echo -e "${green}Created /etc/.gitignore and added x-ui.db for etckeeper${plain}"
+            echo -e "${green}已创建 /etc/.gitignore 并添加 x-ui.db (针对 etckeeper)${plain}"
         fi
     fi
 
     if [[ $release == "alpine" ]]; then
         curl -4fLRo /etc/init.d/x-ui https://raw.githubusercontent.com/lgdglgc/3x-ui/main/x-ui.rc
         if [[ $? -ne 0 ]]; then
-            echo -e "${red}Failed to download x-ui.rc${plain}"
+            echo -e "${red}下载 x-ui.rc 失败${plain}"
             exit 1
         fi
         chmod +x /etc/init.d/x-ui
@@ -1432,7 +1424,7 @@ install_x-ui() {
         service_installed=false
 
         if [ -f "x-ui.service" ]; then
-            echo -e "${green}Found x-ui.service in extracted files, installing...${plain}"
+            echo -e "${green}在解压目录中检测到 x-ui.service，正在安装...${plain}"
             cp -f x-ui.service ${xui_service}/ > /dev/null 2>&1
             if [[ $? -eq 0 ]]; then
                 service_installed=true
@@ -1443,7 +1435,7 @@ install_x-ui() {
             case "${release}" in
                 ubuntu | debian | armbian)
                     if [ -f "x-ui.service.debian" ]; then
-                        echo -e "${green}Found x-ui.service.debian in extracted files, installing...${plain}"
+                        echo -e "${green}在解压目录中检测到 x-ui.service.debian，正在安装...${plain}"
                         cp -f x-ui.service.debian ${xui_service}/x-ui.service > /dev/null 2>&1
                         if [[ $? -eq 0 ]]; then
                             service_installed=true
@@ -1452,7 +1444,7 @@ install_x-ui() {
                     ;;
                 arch | manjaro | parch)
                     if [ -f "x-ui.service.arch" ]; then
-                        echo -e "${green}Found x-ui.service.arch in extracted files, installing...${plain}"
+                        echo -e "${green}在解压目录中检测到 x-ui.service.arch，正在安装...${plain}"
                         cp -f x-ui.service.arch ${xui_service}/x-ui.service > /dev/null 2>&1
                         if [[ $? -eq 0 ]]; then
                             service_installed=true
@@ -1461,7 +1453,7 @@ install_x-ui() {
                     ;;
                 *)
                     if [ -f "x-ui.service.rhel" ]; then
-                        echo -e "${green}Found x-ui.service.rhel in extracted files, installing...${plain}"
+                        echo -e "${green}在解压目录中检测到 x-ui.service.rhel，正在安装...${plain}"
                         cp -f x-ui.service.rhel ${xui_service}/x-ui.service > /dev/null 2>&1
                         if [[ $? -eq 0 ]]; then
                             service_installed=true
@@ -1473,7 +1465,7 @@ install_x-ui() {
 
         # If service file not found in tar.gz, download from GitHub
         if [ "$service_installed" = false ]; then
-            echo -e "${yellow}Service files not found in tar.gz, downloading from GitHub...${plain}"
+            echo -e "${yellow}解压包中未找到服务文件，正在从仓库下载...${plain}"
             case "${release}" in
                 ubuntu | debian | armbian)
                     curl -4fLRo ${xui_service}/x-ui.service https://raw.githubusercontent.com/lgdglgc/3x-ui/main/x-ui.service.debian > /dev/null 2>&1
@@ -1487,21 +1479,21 @@ install_x-ui() {
             esac
 
             if [[ $? -ne 0 ]]; then
-                echo -e "${red}Failed to install x-ui.service from GitHub${plain}"
+                echo -e "${red}从仓库下载 x-ui.service 服务文件失败${plain}"
                 exit 1
             fi
             service_installed=true
         fi
 
         if [ "$service_installed" = true ]; then
-            echo -e "${green}Setting up systemd unit...${plain}"
+            echo -e "${green}正在配置 systemd 服务单元并启动...${plain}"
             chown root:root ${xui_service}/x-ui.service > /dev/null 2>&1
             chmod 644 ${xui_service}/x-ui.service > /dev/null 2>&1
             systemctl daemon-reload
             systemctl enable x-ui
             systemctl start x-ui
         else
-            echo -e "${red}Failed to install x-ui.service file${plain}"
+            echo -e "${red}安装 x-ui.service 服务文件失败${plain}"
             exit 1
         fi
     fi
@@ -1528,6 +1520,6 @@ install_x-ui() {
 └────────────────────────────────────────────────────────────────┘"
 }
 
-echo -e "${green}Running...${plain}"
+echo -e "${green}正在执行安装流程...${plain}"
 install_base
 install_x-ui $1

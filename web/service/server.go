@@ -624,6 +624,7 @@ const (
 )
 
 func (s *ServerService) GetXrayVersions() ([]string, error) {
+	const defaultStable = "v26.6.27"
 	const (
 		XrayURL    = "https://api.github.com/repos/XTLS/Xray-core/releases"
 		bufferSize = 8192
@@ -631,31 +632,24 @@ func (s *ServerService) GetXrayVersions() ([]string, error) {
 
 	resp, err := s.settingService.NewProxiedHTTPClient(10 * time.Second).Get(XrayURL)
 	if err != nil {
-		return nil, err
+		return []string{defaultStable}, nil
 	}
 	defer resp.Body.Close()
 
 	// Check HTTP status code - GitHub API returns object instead of array on error
 	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		var errorResponse struct {
-			Message string `json:"message"`
-		}
-		if json.Unmarshal(bodyBytes, &errorResponse) == nil && errorResponse.Message != "" {
-			return nil, fmt.Errorf("GitHub API error: %s", errorResponse.Message)
-		}
-		return nil, fmt.Errorf("GitHub API returned status %d: %s", resp.StatusCode, resp.Status)
+		return []string{defaultStable}, nil
 	}
 
 	buffer := bytes.NewBuffer(make([]byte, bufferSize))
 	buffer.Reset()
 	if _, err := buffer.ReadFrom(resp.Body); err != nil {
-		return nil, err
+		return []string{defaultStable}, nil
 	}
 
 	var releases []Release
 	if err := json.Unmarshal(buffer.Bytes(), &releases); err != nil {
-		return nil, err
+		return []string{defaultStable}, nil
 	}
 
 	var versions []string
@@ -673,9 +667,16 @@ func (s *ServerService) GetXrayVersions() ([]string, error) {
 			continue
 		}
 
-		if major > 26 || (major == 26 && minor > 4) || (major == 26 && minor == 4 && patch >= 25) {
+		// Cap max version at v26.6.27 to prevent buggy newer versions,
+		// and allow down to v26.4.25
+		isUpToTarget := major < 26 || (major == 26 && minor < 6) || (major == 26 && minor == 6 && patch <= 27)
+		isAboveMin := major > 26 || (major == 26 && minor > 4) || (major == 26 && minor == 4 && patch >= 25)
+		if isUpToTarget && isAboveMin {
 			versions = append(versions, release.TagName)
 		}
+	}
+	if !slices.Contains(versions, defaultStable) {
+		versions = append([]string{defaultStable}, versions...)
 	}
 	return versions, nil
 }

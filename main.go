@@ -103,7 +103,7 @@ func runWebServer() {
 				log.Fatalf("Error restarting web server: %v", err)
 				return
 			}
-			log.Println("Web server restarted successfully.")
+			log.Println("Web 面板服务重启成功。")
 
 			sub.SetDistFS(web.EmbeddedDist())
 			subServer = sub.NewServer()
@@ -113,7 +113,7 @@ func runWebServer() {
 				log.Fatalf("Error restarting sub server: %v", err)
 				return
 			}
-			log.Println("Sub server restarted successfully.")
+			log.Println("订阅服务重启成功。")
 		case sys.SIGUSR1:
 			logger.Info("Received USR1 signal, restarting xray-core...")
 			err := server.RestartXray()
@@ -128,7 +128,7 @@ func runWebServer() {
 
 			server.Stop()
 			subServer.Stop()
-			log.Println("Shutting down servers.")
+			log.Println("正在停止所有服务。")
 			return
 		}
 	}
@@ -183,23 +183,23 @@ func showSetting(show bool) {
 		}
 
 		if userModel.Username == "" || userModel.Password == "" {
-			fmt.Println("current username or password is empty")
+			fmt.Println("当前用户名或密码为空")
 		}
 
-		fmt.Println("current panel settings as follows:")
+		fmt.Println("当前面板设置如下:")
 		if certFile == "" || keyFile == "" {
-			fmt.Println("Warning: Panel is not secure with SSL")
+			fmt.Println("警告: 面板未启用 SSL 安全证书")
 		} else {
-			fmt.Println("Panel is secure with SSL")
+			fmt.Println("面板已启用 SSL 安全加密")
 		}
 
 		hasDefaultCredential := func() bool {
 			return userModel.Username == "admin" && crypto.CheckPasswordHash(userModel.Password, "admin")
 		}()
 
-		fmt.Println("hasDefaultCredential:", hasDefaultCredential)
-		fmt.Println("port:", port)
-		fmt.Println("webBasePath:", webBasePath)
+		fmt.Println("使用默认初始凭据:", hasDefaultCredential)
+		fmt.Println("面板端口 (port):", port)
+		fmt.Println("面板根路径 (webBasePath):", webBasePath)
 	}
 }
 
@@ -275,27 +275,27 @@ func updateSetting(port int, username string, password string, webBasePath strin
 	if port > 0 {
 		err := settingService.SetPort(port)
 		if err != nil {
-			fmt.Println("Failed to set port:", err)
+			fmt.Println("设置端口失败:", err)
 		} else {
-			fmt.Printf("Port set successfully: %v\n", port)
+			fmt.Printf("端口设置成功: %v\n", port)
 		}
 	}
 
 	if username != "" || password != "" {
 		err := userService.UpdateFirstUser(username, password)
 		if err != nil {
-			fmt.Println("Failed to update username and password:", err)
+			fmt.Println("更新用户名和密码失败:", err)
 		} else {
-			fmt.Println("Username and password updated successfully")
+			fmt.Println("用户名和密码更新成功")
 		}
 	}
 
 	if webBasePath != "" {
 		err := settingService.SetBasePath(webBasePath)
 		if err != nil {
-			fmt.Println("Failed to set base URI path:", err)
+			fmt.Println("设置面板根路径失败:", err)
 		} else {
-			fmt.Println("Base URI path set successfully")
+			fmt.Println("面板根路径设置成功")
 		}
 	}
 
@@ -303,19 +303,19 @@ func updateSetting(port int, username string, password string, webBasePath strin
 		err := settingService.SetTwoFactorEnable(false)
 
 		if err != nil {
-			fmt.Println("Failed to reset two-factor authentication:", err)
+			fmt.Println("重置两步验证失败:", err)
 		} else {
 			settingService.SetTwoFactorToken("")
-			fmt.Println("Two-factor authentication reset successfully")
+			fmt.Println("两步验证已成功重置")
 		}
 	}
 
 	if listenIP != "" {
 		err := settingService.SetListen(listenIP)
 		if err != nil {
-			fmt.Println("Failed to set listen IP:", err)
+			fmt.Println("设置监听 IP 失败:", err)
 		} else {
-			fmt.Printf("listen %v set successfully", listenIP)
+			fmt.Printf("监听 IP %v 设置成功\n", listenIP)
 		}
 	}
 
@@ -334,33 +334,33 @@ func updateCert(publicKey string, privateKey string) {
 		settingService := service.SettingService{}
 		err = settingService.SetCertFile(publicKey)
 		if err != nil {
-			fmt.Println("set certificate public key failed:", err)
+			fmt.Println("设置证书公钥失败:", err)
 		} else {
-			fmt.Println("set certificate public key success")
+			fmt.Println("设置证书公钥成功")
 		}
 
 		err = settingService.SetKeyFile(privateKey)
 		if err != nil {
-			fmt.Println("set certificate private key failed:", err)
+			fmt.Println("设置证书私钥失败:", err)
 		} else {
-			fmt.Println("set certificate private key success")
+			fmt.Println("设置证书私钥成功")
 		}
 
 		err = settingService.SetSubCertFile(publicKey)
 		if err != nil {
-			fmt.Println("set certificate for subscription public key failed:", err)
+			fmt.Println("设置订阅证书公钥失败:", err)
 		} else {
-			fmt.Println("set certificate for subscription public key success")
+			fmt.Println("设置订阅证书公钥成功")
 		}
 
 		err = settingService.SetSubKeyFile(privateKey)
 		if err != nil {
-			fmt.Println("set certificate for subscription private key failed:", err)
+			fmt.Println("设置订阅证书私钥失败:", err)
 		} else {
-			fmt.Println("set certificate for subscription private key success")
+			fmt.Println("设置订阅证书私钥成功")
 		}
 	} else {
-		fmt.Println("both public and private key should be entered.")
+		fmt.Println("证书公钥和私钥必须同时输入。")
 	}
 }
 
@@ -427,9 +427,9 @@ func migrateDb() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("Start migrating database...")
+	fmt.Println("开始迁移数据库...")
 	inboundService.MigrateDB()
-	fmt.Println("Migration done!")
+	fmt.Println("数据库迁移完成！")
 }
 
 // loadServiceEnvFile loads the systemd EnvironmentFile so CLI subcommands like
@@ -459,15 +459,15 @@ func main() {
 	}
 
 	var showVersion bool
-	flag.BoolVar(&showVersion, "v", false, "show version")
+	flag.BoolVar(&showVersion, "v", false, "显示版本号")
 
 	runCmd := flag.NewFlagSet("run", flag.ExitOnError)
 
 	migrateDbCmd := flag.NewFlagSet("migrate-db", flag.ExitOnError)
 	var migrateDsn string
 	var migrateSrc string
-	migrateDbCmd.StringVar(&migrateDsn, "dsn", "", "Destination PostgreSQL DSN (postgres://user:pass@host:port/db?sslmode=disable)")
-	migrateDbCmd.StringVar(&migrateSrc, "src", "", "Source SQLite file (defaults to the configured x-ui.db)")
+	migrateDbCmd.StringVar(&migrateDsn, "dsn", "", "目标 PostgreSQL DSN 连接串 (postgres://user:pass@host:port/db?sslmode=disable)")
+	migrateDbCmd.StringVar(&migrateSrc, "src", "", "源 SQLite 数据库文件 (默认使用配置的 x-ui.db)")
 
 	settingCmd := flag.NewFlagSet("setting", flag.ExitOnError)
 	var port int
@@ -487,33 +487,33 @@ func main() {
 	var getCert bool
 	var getApiToken bool
 	var resetTwoFactor bool
-	settingCmd.BoolVar(&reset, "reset", false, "Reset all settings")
-	settingCmd.BoolVar(&show, "show", false, "Display current settings")
-	settingCmd.IntVar(&port, "port", 0, "Set panel port number")
-	settingCmd.StringVar(&username, "username", "", "Set login username")
-	settingCmd.StringVar(&password, "password", "", "Set login password")
-	settingCmd.StringVar(&webBasePath, "webBasePath", "", "Set base path for Panel")
-	settingCmd.StringVar(&listenIP, "listenIP", "", "set panel listenIP IP")
-	settingCmd.BoolVar(&resetTwoFactor, "resetTwoFactor", false, "Reset two-factor authentication settings")
-	settingCmd.BoolVar(&getListen, "getListen", false, "Display current panel listenIP IP")
-	settingCmd.BoolVar(&getCert, "getCert", false, "Display current certificate settings")
-	settingCmd.BoolVar(&getApiToken, "getApiToken", false, "Display current API token")
-	settingCmd.StringVar(&webCertFile, "webCert", "", "Set path to public key file for panel")
-	settingCmd.StringVar(&webKeyFile, "webCertKey", "", "Set path to private key file for panel")
-	settingCmd.StringVar(&tgbottoken, "tgbottoken", "", "Set token for Telegram bot")
-	settingCmd.StringVar(&tgbotRuntime, "tgbotRuntime", "", "Set cron time for Telegram bot notifications")
-	settingCmd.StringVar(&tgbotchatid, "tgbotchatid", "", "Set chat ID for Telegram bot notifications")
-	settingCmd.BoolVar(&enabletgbot, "enabletgbot", false, "Enable notifications via Telegram bot")
+	settingCmd.BoolVar(&reset, "reset", false, "重置所有面板设置")
+	settingCmd.BoolVar(&show, "show", false, "显示当前面板设置")
+	settingCmd.IntVar(&port, "port", 0, "设置面板监听端口号")
+	settingCmd.StringVar(&username, "username", "", "设置登录用户名")
+	settingCmd.StringVar(&password, "password", "", "设置登录密码")
+	settingCmd.StringVar(&webBasePath, "webBasePath", "", "设置面板访问根路径 (webBasePath)")
+	settingCmd.StringVar(&listenIP, "listenIP", "", "设置面板监听 IP")
+	settingCmd.BoolVar(&resetTwoFactor, "resetTwoFactor", false, "重置两步验证设置")
+	settingCmd.BoolVar(&getListen, "getListen", false, "显示当前面板监听 IP")
+	settingCmd.BoolVar(&getCert, "getCert", false, "显示当前证书配置")
+	settingCmd.BoolVar(&getApiToken, "getApiToken", false, "显示当前 API 令牌")
+	settingCmd.StringVar(&webCertFile, "webCert", "", "设置面板证书公钥文件路径")
+	settingCmd.StringVar(&webKeyFile, "webCertKey", "", "设置面板证书私钥文件路径")
+	settingCmd.StringVar(&tgbottoken, "tgbottoken", "", "设置 Telegram 机器人 Token")
+	settingCmd.StringVar(&tgbotRuntime, "tgbotRuntime", "", "设置 Telegram 机器人通知定时规则 (Cron)")
+	settingCmd.StringVar(&tgbotchatid, "tgbotchatid", "", "设置 Telegram 机器人通知目标 Chat ID")
+	settingCmd.BoolVar(&enabletgbot, "enabletgbot", false, "启用 Telegram 机器人通知")
 
 	oldUsage := flag.Usage
 	flag.Usage = func() {
 		oldUsage()
 		fmt.Println()
-		fmt.Println("Commands:")
-		fmt.Println("    run            run web panel")
-		fmt.Println("    migrate        migrate form other/old x-ui")
-		fmt.Println("    migrate-db     copy data from the SQLite file into a PostgreSQL database")
-		fmt.Println("    setting        set settings")
+		fmt.Println("可用命令:")
+		fmt.Println("    run            运行 Web 面板服务")
+		fmt.Println("    migrate        从旧版或其他 x-ui 迁移数据")
+		fmt.Println("    migrate-db     将 SQLite 数据库迁移至 PostgreSQL 数据库")
+		fmt.Println("    setting        查看或修改面板配置")
 	}
 
 	flag.Parse()
@@ -594,7 +594,7 @@ func main() {
 			updateCert(webCertFile, webKeyFile)
 		}
 	default:
-		fmt.Println("Invalid subcommands")
+		fmt.Println("无效的子命令")
 		fmt.Println()
 		runCmd.Usage()
 		fmt.Println()
