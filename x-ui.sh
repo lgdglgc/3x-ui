@@ -260,17 +260,18 @@ update_menu() {
 }
 
 legacy_version() {
-    echo -n "请输入要切换的面板版本 (例如 3.4.2): "
-    read -r tag_version
+    read -rp "请输入要切换的面板版本 [默认 3.4.2]: " tag_version
+    [[ -z "$tag_version" ]] && tag_version="3.4.2"
+    [[ "$tag_version" =~ ^v ]] || tag_version="v$tag_version"
 
-    if [ -z "$tag_version" ]; then
-        echo "面板版本号不能为空，操作退出。"
-        exit 1
-    fi
-    # Use the entered panel version in the download link
-    install_command="bash <(curl -Ls "https://raw.githubusercontent.com/lgdglgc/3x-ui/main/install.sh") v$tag_version"
+    read -rp "请输入要搭配的 Xray 核心版本 [默认 v26.6.27]: " xray_version
+    [[ -z "$xray_version" ]] && xray_version="v26.6.27"
+    [[ "$xray_version" =~ ^v ]] || xray_version="v$xray_version"
 
-    echo "正在下载并安装面板版本 $tag_version..."
+    # Use the entered panel version and xray version in the download link
+    install_command="bash <(curl -Ls "https://raw.githubusercontent.com/lgdglgc/3x-ui/main/install.sh") $tag_version $xray_version"
+
+    echo "正在下载并安装面板版本 $tag_version (Xray 核心: $xray_version)..."
     eval $install_command
 }
 

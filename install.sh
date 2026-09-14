@@ -201,29 +201,29 @@ start_occupying_services() {
 install_base() {
     case "${release}" in
         ubuntu | debian | armbian)
-            apt-get update && apt-get install -y -q cron curl tar tzdata socat ca-certificates openssl
+            apt-get update && apt-get install -y -q cron curl tar tzdata socat ca-certificates openssl unzip
             ;;
         fedora | amzn | virtuozzo | rhel | almalinux | rocky | ol)
-            dnf -y update && dnf install -y -q cronie curl tar tzdata socat ca-certificates openssl
+            dnf -y update && dnf install -y -q cronie curl tar tzdata socat ca-certificates openssl unzip
             ;;
         centos)
             if [[ "${VERSION_ID}" =~ ^7 ]]; then
-                yum -y update && yum install -y cronie curl tar tzdata socat ca-certificates openssl
+                yum -y update && yum install -y cronie curl tar tzdata socat ca-certificates openssl unzip
             else
-                dnf -y update && dnf install -y -q cronie curl tar tzdata socat ca-certificates openssl
+                dnf -y update && dnf install -y -q cronie curl tar tzdata socat ca-certificates openssl unzip
             fi
             ;;
         arch | manjaro | parch)
-            pacman -Syu && pacman -Syu --noconfirm cronie curl tar tzdata socat ca-certificates openssl
+            pacman -Syu && pacman -Syu --noconfirm cronie curl tar tzdata socat ca-certificates openssl unzip
             ;;
         opensuse-tumbleweed | opensuse-leap)
-            zypper refresh && zypper -q install -y cron curl tar timezone socat ca-certificates openssl
+            zypper refresh && zypper -q install -y cron curl tar timezone socat ca-certificates openssl unzip
             ;;
         alpine)
-            apk update && apk add dcron curl tar tzdata socat ca-certificates openssl
+            apk update && apk add dcron curl tar tzdata socat ca-certificates openssl unzip
             ;;
         *)
-            apt-get update && apt-get install -y -q cron curl tar tzdata socat ca-certificates openssl
+            apt-get update && apt-get install -y -q cron curl tar tzdata socat ca-certificates openssl unzip
             ;;
     esac
 }
@@ -1329,40 +1329,135 @@ EOF
     ${xui_folder}/x-ui migrate
 }
 
+setup_xray_core() {
+    local target_xray_version="$1"
+    [[ -z "$target_xray_version" ]] && target_xray_version="v26.6.27"
+    [[ "$target_xray_version" =~ ^v ]] || target_xray_version="v${target_xray_version}"
+
+    local xray_bin="bin/xray-linux-$(arch)"
+    if [[ $(arch) == "armv5" || $(arch) == "armv6" || $(arch) == "armv7" ]]; then
+        xray_bin="bin/xray-linux-arm"
+    fi
+
+    # Check if the extracted binary already matches target version
+    if [[ -f "$xray_bin" ]]; then
+        chmod +x "$xray_bin"
+        local cur_ver
+        cur_ver=$("$xray_bin" version 2>/dev/null | head -n 1 | awk '{print $2}')
+        local target_clean="${target_xray_version#v}"
+        if [[ "$cur_ver" == "$target_clean" || "$cur_ver" == "$target_xray_version" ]]; then
+            echo -e "${green}检测到解压的 Xray 核心已为目标版本 (${target_xray_version})，无需重复下载。${plain}"
+            return 0
+        fi
+    fi
+
+    echo -e "${green}正在配置 Xray 核心版本: ${target_xray_version}...${plain}"
+    local xray_arch=""
+    case "$(arch)" in
+        amd64) xray_arch="64" ;;
+        arm64) xray_arch="arm64-v8a" ;;
+        armv7) xray_arch="arm32-v7a" ;;
+        armv6) xray_arch="arm32-v6" ;;
+        armv5) xray_arch="arm32-v5" ;;
+        386) xray_arch="32" ;;
+        s390x) xray_arch="s390x" ;;
+        *) xray_arch="64" ;;
+    esac
+
+    local xray_zip="Xray-linux-${xray_arch}.zip"
+    local xray_url="https://github.com/XTLS/Xray-core/releases/download/${target_xray_version}/${xray_zip}"
+    local tmp_dir="/tmp/xray_download_$$"
+    mkdir -p "$tmp_dir"
+
+    curl -4fLRo "${tmp_dir}/${xray_zip}" "$xray_url" 2> /dev/null
+    if [[ $? -ne 0 ]]; then
+        curl -fLRo "${tmp_dir}/${xray_zip}" "$xray_url" 2> /dev/null
+    fi
+
+    if [[ -f "${tmp_dir}/${xray_zip}" ]]; then
+        if command -v unzip &> /dev/null; then
+            unzip -o -q "${tmp_dir}/${xray_zip}" -d "$tmp_dir"
+        elif command -v busybox &> /dev/null && busybox unzip &> /dev/null; then
+            busybox unzip -o "${tmp_dir}/${xray_zip}" -d "$tmp_dir"
+        fi
+
+        if [[ -f "${tmp_dir}/xray" ]]; then
+            cp -f "${tmp_dir}/xray" "$xray_bin"
+            chmod +x "$xray_bin"
+            echo -e "${green}成功配置 Xray 核心版本: ${target_xray_version}${plain}"
+        else
+            echo -e "${yellow}解压 Xray 核心失败，保留默认自带的核心文件${plain}"
+        fi
+        rm -rf "$tmp_dir"
+    else
+        echo -e "${yellow}下载指定版本的 Xray 核心失败，将使用安装包自带的核心文件${plain}"
+        rm -rf "$tmp_dir"
+    fi
+}
+
 install_x-ui() {
     cd ${xui_folder%/x-ui}/
 
+    local tag_version=""
+    local xray_version=""
+
     # Download resources
     if [ $# == 0 ]; then
-        tag_version="v3.4.2"
-        echo -e "固定安装 x-ui 面板版本: ${tag_version}，开始安装..."
-        curl -4fLRo ${xui_folder}-linux-$(arch).tar.gz https://github.com/lgdglgc/3x-ui/releases/download/${tag_version}/x-ui-linux-$(arch).tar.gz
-        if [[ $? -ne 0 ]]; then
-            echo -e "${red}下载 x-ui 失败，请确保您的服务器可以正常访问网络${plain}"
-            exit 1
-        fi
+        echo ""
+        echo -e "${green}═══════════════════════════════════════════${plain}"
+        echo -e "${green}       x-ui 面板及 Xray 核心版本设置        ${plain}"
+        echo -e "${green}═══════════════════════════════════════════${plain}"
+        read -rp "请输入要安装的 x-ui 面板版本 [默认 3.4.2]: " input_version
+        [[ -z "${input_version}" ]] && input_version="3.4.2"
+        [[ "${input_version}" =~ ^v ]] || input_version="v${input_version}"
+        tag_version="${input_version}"
+
+        read -rp "请输入要安装的 Xray 核心版本 [默认 v26.6.27]: " input_xray_version
+        [[ -z "${input_xray_version}" ]] && input_xray_version="v26.6.27"
+        [[ "${input_xray_version}" =~ ^v ]] || input_xray_version="v${input_xray_version}"
+        xray_version="${input_xray_version}"
     else
         tag_version=$1
-        tag_version_numeric=${tag_version#v}
-        min_version="2.3.5"
+        [[ "${tag_version}" =~ ^v ]] || tag_version="v${tag_version}"
 
-        if [[ "$(printf '%s\n' "$min_version" "$tag_version_numeric" | sort -V | head -n1)" != "$min_version" ]]; then
-            echo -e "${red}请使用较新版本 (至少 v2.3.5)。退出安装。${plain}"
-            exit 1
+        if [[ $# -ge 2 ]]; then
+            xray_version=$2
+            [[ "${xray_version}" =~ ^v ]] || xray_version="v${xray_version}"
+        else
+            read -rp "请输入要安装的 Xray 核心版本 [默认 v26.6.27]: " input_xray_version
+            [[ -z "${input_xray_version}" ]] && input_xray_version="v26.6.27"
+            [[ "${input_xray_version}" =~ ^v ]] || input_xray_version="v${input_xray_version}"
+            xray_version="${input_xray_version}"
         fi
+    fi
 
-        url="https://github.com/lgdglgc/3x-ui/releases/download/${tag_version}/x-ui-linux-$(arch).tar.gz"
-        echo -e "开始安装 x-ui $1..."
-        curl -4fLRo ${xui_folder}-linux-$(arch).tar.gz ${url}
+    local tag_version_numeric=${tag_version#v}
+    local min_version="2.3.5"
+
+    if [[ "$(printf '%s\n' "$min_version" "$tag_version_numeric" | sort -V | head -n1)" != "$min_version" ]]; then
+        echo -e "${red}请使用较新版本 (至少 v2.3.5)。退出安装。${plain}"
+        exit 1
+    fi
+
+    echo -e "准备从官方上游 Release 源下载 x-ui 面板版本: ${tag_version}，Xray 核心: ${xray_version}..."
+    local url="https://github.com/MHSanaei/3x-ui/releases/download/${tag_version}/x-ui-linux-$(arch).tar.gz"
+    curl -4fLRo ${xui_folder}-linux-$(arch).tar.gz ${url}
+    if [[ $? -ne 0 ]]; then
+        echo -e "${yellow}尝试使用常规方式重新下载...${plain}"
+        curl -fLRo ${xui_folder}-linux-$(arch).tar.gz ${url}
         if [[ $? -ne 0 ]]; then
-            echo -e "${red}下载 x-ui $1 失败，请检查该版本是否存在${plain}"
+            echo -e "${red}下载 x-ui ${tag_version} 失败，请检查官方 Release 是否存在该版本或网络连接是否正常${plain}"
             exit 1
         fi
     fi
+
     curl -4fLRo /usr/bin/x-ui-temp https://raw.githubusercontent.com/lgdglgc/3x-ui/main/x-ui.sh
     if [[ $? -ne 0 ]]; then
-        echo -e "${red}下载 x-ui.sh 管理脚本失败${plain}"
-        exit 1
+        curl -fLRo /usr/bin/x-ui-temp https://raw.githubusercontent.com/lgdglgc/3x-ui/main/x-ui.sh
+        if [[ $? -ne 0 ]]; then
+            echo -e "${red}下载 x-ui.sh 管理脚本失败${plain}"
+            exit 1
+        fi
     fi
 
     # Stop x-ui service and remove old resources
@@ -1389,6 +1484,9 @@ install_x-ui() {
         chmod +x bin/xray-linux-arm
     fi
     chmod +x x-ui bin/xray-linux-$(arch)
+
+    # Setup target Xray core version
+    setup_xray_core "${xray_version}"
 
     # Update x-ui cli and se set permission
     mv -f /usr/bin/x-ui-temp /usr/bin/x-ui
