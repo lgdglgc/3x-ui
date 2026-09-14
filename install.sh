@@ -179,10 +179,14 @@ stop_occupying_services() {
     local port="$1"
     local stopped_services=""
     if is_port_in_use "${port}"; then
-        for svc in nginx apache2 caddy; do
+        for svc in nginx openresty apache2 httpd caddy tengine; do
             if systemctl is-active --quiet ${svc} 2>/dev/null; then
-                LOGI "正在临时停止 ${svc} 服务以释放端口 ${port}..."
+                LOGI "正在临时停止 ${svc} 服务以释放端口 ${port}..." >&2
                 systemctl stop ${svc} >/dev/null 2>&1
+                stopped_services="${stopped_services} ${svc}"
+            elif [ -f "/etc/init.d/${svc}" ]; then
+                LOGI "正在临时停止 /etc/init.d/${svc} 服务以释放端口 ${port}..." >&2
+                /etc/init.d/${svc} stop >/dev/null 2>&1
                 stopped_services="${stopped_services} ${svc}"
             fi
         done
@@ -193,8 +197,12 @@ stop_occupying_services() {
 start_occupying_services() {
     local svcs="$1"
     for svc in ${svcs}; do
-        LOGI "正在恢复重启 ${svc} 服务..."
-        systemctl start ${svc} >/dev/null 2>&1
+        LOGI "正在恢复重启 ${svc} 服务..." >&2
+        if systemctl list-unit-files "${svc}.service" >/dev/null 2>&1 || systemctl status "${svc}" >/dev/null 2>&1; then
+            systemctl start ${svc} >/dev/null 2>&1
+        elif [ -f "/etc/init.d/${svc}" ]; then
+            /etc/init.d/${svc} start >/dev/null 2>&1
+        fi
     done
 }
 
@@ -699,8 +707,10 @@ ssl_cert_issue() {
 
     # get the port number for the standalone server
     local WebPort=80
-    read -rp "请选择用于验证的端口 (默认 80): " WebPort
-    if [[ ${WebPort} -gt 65535 || ${WebPort} -lt 1 ]]; then
+    local input_port=""
+    read -rp "请选择用于验证的端口 (默认 80): " input_port
+    [[ -n "${input_port}" ]] && WebPort="${input_port}"
+    if ! [[ "${WebPort}" =~ ^[0-9]+$ ]] || [[ ${WebPort} -gt 65535 || ${WebPort} -lt 1 ]]; then
         LOGE "输入端口 ${WebPort} 无效，将使用默认的 80 端口。"
         WebPort=80
     fi
@@ -722,6 +732,22 @@ ssl_cert_issue() {
 
     # Stop occupying services
     stopped_svcs=$(stop_occupying_services "${WebPort}")
+
+    if is_port_in_use "${WebPort}"; then
+        LOGW "警告: 检测到端口 ${WebPort} 仍被其他进程占用！"
+        if command -v ss >/dev/null 2>&1; then
+            LOGW "占用详情: $(ss -lptn "sport = :${WebPort}" 2>/dev/null | tail -n +2 | tr '\n' ' ')"
+        elif command -v lsof >/dev/null 2>&1; then
+            LOGW "占用进程: $(lsof -nP -iTCP:${WebPort} -sTCP:LISTEN 2>/dev/null | tail -n +2 | awk '{print $1\"(PID:\"$2\")\"}' | head -n 3 | tr '\n' ' ')"
+        fi
+        confirm "是否尝试强制结束占用该端口的进程以继续？" "n"
+        if [ $? -eq 0 ]; then
+            if command -v fuser >/dev/null 2>&1; then
+                fuser -k -n tcp ${WebPort} >/dev/null 2>&1
+            fi
+            sleep 1
+        fi
+    fi
 
     # Temporarily open firewall port
     fw_type=$(manage_firewall_port "open" "${WebPort}")
