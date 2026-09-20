@@ -80,9 +80,9 @@ x-ui
 
 ### 1. 专属 AI 分流规则库 (`geosite_myai.dat`)
 为了解决自建节点访问 OpenAI / Claude / Gemini 经常遭遇 IP 限制、验证码弹窗或住宅 IP 家宽路由需求，本项目直接内置专用的 AI 规则数据库：
-- **全面覆盖**：涵盖 `OpenAI (ChatGPT / SORA)`、`Anthropic (Claude)`、`Google (Gemini / DeepMind)`、`Microsoft (Copilot)`、`Perplexity`、`Cursor` 等核心域名及 API 端点。
+- **全面覆盖**：涵盖 `OpenAI (ChatGPT / SORA)`、`Anthropic (Claude)`、`Google (Gemini / Antigravity IDE / DeepMind)`、`Microsoft (Copilot)`、`Cursor`、`Windsurf`、`Perplexity` 等核心域名及 API 端点。
 - **全链路自动部署**：`install.sh` 与 `update.sh` 在安装或更新时，自动将 `geosite_myai.dat` 下载并配置到 `/usr/local/x-ui/bin/`。
-- **面板原生支持**：3X-UI 面板的路由规则下拉菜单中已原生支持自定义规则库，可直接设置 `ext:geosite_myai.dat:ai` 规则将 AI 流量引流到住宅家宽出站。
+- **面板原生支持**：3X-UI 面板的路由规则下拉菜单中已原生支持自定义规则库，可直接设置 `ext:geosite_myai.dat:ai`（或单独指定 `ext:geosite_myai.dat:antigravity`）规则将 AI 流量引流到住宅家宽出站。
 
 ```
 ┌────────────────────────────────────────────────────────┐

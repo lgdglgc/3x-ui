@@ -1,15 +1,22 @@
-# geosite_myai.dat Domain List (158 total rules)
+# geosite_myai.dat Domain List (165 total rules)
 # Generated for AI Home Broadband Routing / 家宽分流
 
 regexp:^chatgpt-async-webps-prod-\S+-\d+\.webpubsub\.azure\.com$
+ai.google.dev
 ai.studio
 aicode.googleapis.com
 aida.googleapis.com
 aisandbox-pa.googleapis.com
 aistudio.google.com
+alkalicore-pa.clients6.google.com
+alkalimakersuite-pa.clients6.google.com
 anthropic.com
+antigravity-pa.googleapis.com
+antigravity-staging.google.com
 antigravity-unleash.goog
 antigravity.google
+antigravity.googleapis.com
+antigravity.sandbox.google.com
 anythingllm.com
 api.x.ai
 arena.ai
@@ -28,6 +35,8 @@ claudemcpclient.com
 claudemcpcontent.com
 claudeusercontent.com
 clipdrop.co
+cloudaicompanion.googleapis.com
+cloudcode-pa.googleapis.com
 codeium.com
 codeiumdata.com
 cohere.ai
@@ -43,6 +52,8 @@ cursor.com
 cursor.sh
 cursorapi.com
 d-id.com
+daily-antigravity.sandbox.google.com
+daily-cloudcode-pa.googleapis.com
 deepmind.com
 deepmind.google
 deepseek.com
@@ -82,8 +93,10 @@ mistral.ai
 moonshot.ai
 moonshot.cn
 notebook.google.com
+notebooklm-pa.googleapis.com
 notebooklm.google
 notebooklm.google.com
+notebooklm.googleapis.com
 oaistatic.com
 oaistatsig.com
 oaiusercontent.com
@@ -115,14 +128,12 @@ together.ai
 tripo3d.ai
 turn.livekit.cloud
 udio.com
+webchannel-alkalimakersuite-pa.clients6.google.com
 windsurf.ai
 windsurf.build
 windsurf.com
 x.ai
 full:ai.google.dev
-full:aicode.googleapis.com
-full:aida.googleapis.com
-full:aisandbox-pa.googleapis.com
 full:alkalicore-pa.clients6.google.com
 full:alkalimakersuite-pa.clients6.google.com
 full:antigravity-pa.googleapis.com
@@ -138,8 +149,6 @@ full:copilot-workspace.githubnext.com
 full:copilotprodattachments.blob.core.windows.net
 full:daily-cloudcode-pa.googleapis.com
 full:edgeservices.bing.com
-full:geller-pa.googleapis.com
-full:generativelanguage.googleapis.com
 full:notebooklm-pa.googleapis.com
 full:notebooklm.googleapis.com
 full:o33249.ingest.sentry.io
@@ -152,9 +161,7 @@ full:openaicomproductionae4b.blob.core.windows.net
 full:origin-tracker.githubusercontent.com
 full:ppl-ai-file-upload.s3.amazonaws.com
 full:pplx-res.cloudinary.com
-full:proactivebackend-pa.googleapis.com
 full:production-openaicom-storage.azureedge.net
-full:robinfrontend-pa.googleapis.com
 full:servd-anthropic-website.b-cdn.net
 full:sydney.bing.com
 full:usefathom.com
