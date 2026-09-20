@@ -107,12 +107,16 @@ BASELINE_DATA: Dict[str, List[str]] = {
         "aisandbox-pa.googleapis.com",
         "aicode.googleapis.com",
         "aida.googleapis.com",
-        # Google 账户认证与前端核心依赖 (防止与 Gemini 出现跨 IP 会话分裂拦截: IP1 ≠ IP2)
+        # Google 根域名与全系核心鉴权 (让 Gemini、Google SSO 登录会话与静态资产全部统一走同一出口，避免跨 IP 拦截)
+        # 注意: YouTube 核心视频流域名 (youtube.com, googlevideo.com, ytimg.com) 均为独立根域名，完全不受此影响
+        "google.com",
+        "googleapis.com",
+        "gstatic.com",
+        "googleusercontent.com",
         "accounts.google.com",
         "myaccount.google.com",
         "apis.google.com",
         "oauth2.googleapis.com",
-        "gstatic.com",
         "lh3.googleusercontent.com",
         "generativelanguage.googleusercontent.com",
         "full:play.google.com",

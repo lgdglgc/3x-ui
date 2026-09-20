@@ -1,4 +1,4 @@
-# geosite_myai.dat Domain List (181 total rules)
+# geosite_myai.dat Domain List (184 total rules)
 # Generated for AI Home Broadband Routing / 家宽分流
 
 regexp:^chatgpt-async-webps-prod-\S+-\d+\.webpubsub\.azure\.com$
@@ -83,6 +83,9 @@ generativeai.google
 generativelanguage.googleapis.com
 generativelanguage.googleusercontent.com
 githubcopilot.com
+google.com
+googleapis.com
+googleusercontent.com
 grok.com
 grok.x.com
 grokipedia.com
