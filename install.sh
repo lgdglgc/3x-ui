@@ -1514,6 +1514,12 @@ install_x-ui() {
     # Setup target Xray core version
     setup_xray_core "${xray_version}"
 
+    # Ensure geosite_myai.dat is present
+    if [[ ! -f "bin/geosite_myai.dat" ]]; then
+        echo -e "${green}正在下载 AI 分流规则数据库 geosite_myai.dat...${plain}"
+        curl -fLRo bin/geosite_myai.dat https://raw.githubusercontent.com/lgdglgc/3x-ui/main/geosite_myai.dat 2>/dev/null || true
+    fi
+
     # Update x-ui cli and se set permission
     mv -f /usr/bin/x-ui-temp /usr/bin/x-ui
     chmod +x /usr/bin/x-ui

@@ -1092,6 +1092,7 @@ update_all_geofiles() {
     update_geofiles "main"
     update_geofiles "IR"
     update_geofiles "RU"
+    update_geofiles "MYAI"
 }
 
 update_geofiles() {
@@ -1108,6 +1109,11 @@ update_geofiles() {
             dat_files=(geoip_RU geosite_RU)
             dat_source="runetfreedom/russia-v2ray-rules-dat"
             ;;
+        "MYAI")
+            curl -fLRo ${xui_folder}/bin/geosite_myai.dat -z ${xui_folder}/bin/geosite_myai.dat \
+                https://raw.githubusercontent.com/lgdglgc/3x-ui/main/geosite_myai.dat
+            return 0
+            ;;
     esac
     for dat in "${dat_files[@]}"; do
         # Remove suffix for remote filename (e.g., geoip_IR -> geoip)
@@ -1121,7 +1127,8 @@ update_geo() {
     echo -e "${green}\t1.${plain} Loyalsoldier (geoip.dat, geosite.dat)"
     echo -e "${green}\t2.${plain} chocolate4u (geoip_IR.dat, geosite_IR.dat)"
     echo -e "${green}\t3.${plain} runetfreedom (geoip_RU.dat, geosite_RU.dat)"
-    echo -e "${green}\t4.${plain} All"
+    echo -e "${green}\t4.${plain} MyAI (geosite_myai.dat)"
+    echo -e "${green}\t5.${plain} All"
     echo -e "${green}\t0.${plain} 返回主菜单"
     read -rp "Choose an option: " choice
 
@@ -1145,6 +1152,11 @@ update_geo() {
             restart
             ;;
         4)
+            update_geofiles "MYAI"
+            echo -e "${green}MyAI 规则库更新成功！${plain}"
+            restart
+            ;;
+        5)
             update_all_geofiles
             echo -e "${green}所有 Geo 资源文件已成功更新！${plain}"
             restart

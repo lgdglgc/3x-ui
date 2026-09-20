@@ -18,6 +18,7 @@ export const IPS_OPTIONS = [
   { label: '🇧🇷 Brazil', value: 'geoip:br' },
 ];
 export const DOMAINS_OPTIONS = [
+  { label: '🤖 AI All (MyAI)', value: 'ext:geosite_myai.dat:myai' },
   { label: '🇮🇷 Iran', value: 'ext:geosite_IR.dat:ir' },
   { label: '🇮🇷 .ir', value: 'regexp:.*\\.ir$' },
   { label: '🇮🇷 .ایران', value: 'regexp:.*\\.xn--mgba3a4f16a$' },
@@ -49,6 +50,10 @@ export const BLOCK_DOMAINS_OPTIONS = [
   { label: '🇻🇳 .vn', value: 'regexp:.*\\.vn$' },
 ];
 export const SERVICES_OPTIONS = [
+  { label: '🤖 AI All (MyAI)', value: 'ext:geosite_myai.dat:myai' },
+  { label: 'OpenAI (MyAI)', value: 'ext:geosite_myai.dat:openai' },
+  { label: 'Claude (MyAI)', value: 'ext:geosite_myai.dat:claude' },
+  { label: 'Gemini (MyAI)', value: 'ext:geosite_myai.dat:gemini' },
   { label: 'Apple', value: 'geosite:apple' },
   { label: 'Meta', value: 'geosite:meta' },
   { label: 'Google', value: 'geosite:google' },

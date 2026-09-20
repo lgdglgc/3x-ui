@@ -256,6 +256,7 @@ func (s *Server) initRouter() (*gin.Engine, error) {
 // startTask schedules background jobs (Xray checks, traffic jobs, cron
 // jobs) which the panel relies on for periodic maintenance and monitoring.
 func (s *Server) startTask(restartXray bool) {
+	service.EnsureEmbeddedGeofiles()
 	s.customGeoService.EnsureOnStartup()
 	if restartXray {
 		err := s.xrayService.RestartXray(true)

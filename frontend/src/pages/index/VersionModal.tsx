@@ -23,6 +23,7 @@ interface VersionModalProps {
 const GEOFILES = [
   'geosite.dat',
   'geoip.dat',
+  'geosite_myai.dat',
   'geosite_IR.dat',
   'geoip_IR.dat',
   'geosite_RU.dat',

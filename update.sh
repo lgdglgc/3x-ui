@@ -1259,6 +1259,12 @@ update_x-ui() {
     # Setup target Xray core version
     setup_xray_core "${xray_version}"
 
+    # Ensure geosite_myai.dat is present
+    if [[ ! -f "bin/geosite_myai.dat" ]]; then
+        echo -e "${green}正在下载 AI 分流规则数据库 geosite_myai.dat...${plain}"
+        ${curl_bin} -fLRo bin/geosite_myai.dat https://raw.githubusercontent.com/lgdglgc/3x-ui/main/geosite_myai.dat > /dev/null 2>&1 || true
+    fi
+
     echo -e "${green}正在下载并安装 x-ui.sh 脚本...${plain}"
     ${curl_bin} -fLRo /usr/bin/x-ui https://raw.githubusercontent.com/lgdglgc/3x-ui/main/x-ui.sh > /dev/null 2>&1
     if [[ $? -ne 0 ]]; then
