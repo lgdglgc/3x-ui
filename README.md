@@ -1,10 +1,6 @@
 # 3X-UI (定制汉化 & 稳定加固版)
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/lgdglgc/3x-ui/main/web/assets/images/logo.png" alt="3X-UI Logo" width="100" />
-</p>
-
-<p align="center">
   <strong>专为中文用户与生产环境打造的高性能、全本地化 Xray 可视化管理面板</strong><br>
   <sub>全中文交互 ｜ 生产级加固 ｜ 核心版本锁定 ｜ AI 专属家宽分流 ｜ 纯净自托管</sub>
 </p>
