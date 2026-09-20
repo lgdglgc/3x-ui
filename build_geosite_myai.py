@@ -76,6 +76,7 @@ BASELINE_DATA: Dict[str, List[str]] = {
         "makersuite.google.com",
         "notebooklm.google",
         "notebooklm.google.com",
+        "notebook.google.com",
         "jules.google",
         "jules.google.com",
         "labs.google",

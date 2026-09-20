@@ -1,4 +1,4 @@
-# geosite_myai.dat Domain List (184 total rules)
+# geosite_myai.dat Domain List (185 total rules)
 # Generated for AI Home Broadband Routing / 家宽分流
 
 regexp:^chatgpt-async-webps-prod-\S+-\d+\.webpubsub\.azure\.com$
@@ -111,6 +111,7 @@ manus.im
 midjourney.com
 mistral.ai
 myaccount.google.com
+notebook.google.com
 notebooklm-pa.googleapis.com
 notebooklm.google
 notebooklm.google.com
