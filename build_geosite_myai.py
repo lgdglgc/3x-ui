@@ -11,6 +11,16 @@ TYPE_REGEX = 1      # Regular expression
 TYPE_ROOTDOMAIN = 2 # Root domain (matches domain and all its subdomains)
 TYPE_FULL = 3       # Exact full domain match
 
+# 明确排除的域名集合（国产国内服务走直连、大模型权重下载站防跑光家宽流量）
+EXCLUDE_DOMAINS: Set[str] = {
+    # 国产 AI 平台（国内直连速度最快，避免海外家宽导致延迟暴增或风控）
+    "kimi.ai", "moonshot.cn", "moonshot.ai", "deepseek.com", "deepseek.cn",
+    "zhipuai.cn", "baichuan-ai.com", "stepfun.com", "minimax.io", "minimaxi.com",
+    "doubao.com", "yiyan.baidu.com", "qwen.ai", "tongyi.aliyun.com",
+    # 动辄数 GB ~ 几十 GB 的模型/权重文件站（避免跑爆家宽昂贵流量）
+    "civitai.com",
+}
+
 # Curated offline baseline domain rules per category
 BASELINE_DATA: Dict[str, List[str]] = {
     "openai": [
@@ -24,8 +34,12 @@ BASELINE_DATA: Dict[str, List[str]] = {
         "openai.com",
         "sora.com",
         "chatgpt.livekit.cloud",
+        "livekit.cloud",
         "host.livekit.cloud",
         "turn.livekit.cloud",
+        "featuregates.org",
+        "statsig.com",
+        "statsigapi.net",
         "openai.com.cdn.cloudflare.net",
         "full:openaiapi-site.azureedge.net",
         "full:openaiassets.blob.core.windows.net",
@@ -126,6 +140,8 @@ BASELINE_DATA: Dict[str, List[str]] = {
         "cursorapi.com",
         "tether.cursor.sh",
         "repo42.cursor.sh",
+        "cursor.blob.core.windows.net",
+        "cursor-assets.com",
     ],
     "copilot": [
         "copilot-stg.com",
@@ -172,7 +188,6 @@ BASELINE_DATA: Dict[str, List[str]] = {
         "udio.com",
         "runwayml.com",
         "runway.com",
-        "civitai.com",
         "lumalabs.ai",
         "d-id.com",
         "pika.art",
@@ -189,10 +204,6 @@ BASELINE_DATA: Dict[str, List[str]] = {
         "crewai.com",
         "jasper.ai",
         "clipdrop.co",
-        "kimi.ai",
-        "moonshot.cn",
-        "moonshot.ai",
-        "deepseek.com",
         "tripo3d.ai",
         "openart.ai",
         "sider.ai",
@@ -203,21 +214,37 @@ BASELINE_DATA: Dict[str, List[str]] = {
 
 def parse_rule_line(line: str) -> Tuple[int, str]:
     line = line.strip()
-    if not line or line.startswith('#'):
+    # 忽略空行、注释行、以及上游未展开的 include 嵌套语法 (如 include:cloudflare, include:openai)
+    if not line or line.startswith('#') or line.startswith('include:'):
         return None, None
+    
     parts = line.split()
     rule = parts[0]
     
-    if rule.startswith('full:'):
-        return TYPE_FULL, rule[5:].strip().lower()
-    elif rule.startswith('regexp:'):
-        return TYPE_REGEX, rule[7:].strip()
-    elif rule.startswith('keyword:'):
-        return TYPE_PLAIN, rule[8:].strip().lower()
-    elif rule.startswith('domain:'):
-        return TYPE_ROOTDOMAIN, rule[7:].strip().lower()
+    # 过滤 @cn, @!cn, @ads 等属性标记 (如 example.com @cn)
+    clean_domain = rule.split('@')[0].strip()
+    if not clean_domain:
+        return None, None
+
+    # 检查是否命中明确排除的国内服务或大模型下载站
+    check_domain = clean_domain
+    for prefix in ('full:', 'regexp:', 'keyword:', 'domain:'):
+        if check_domain.startswith(prefix):
+            check_domain = check_domain[len(prefix):]
+            break
+    if check_domain.lower() in EXCLUDE_DOMAINS:
+        return None, None
+
+    if clean_domain.startswith('full:'):
+        return TYPE_FULL, clean_domain[5:].strip().lower()
+    elif clean_domain.startswith('regexp:'):
+        return TYPE_REGEX, clean_domain[7:].strip()
+    elif clean_domain.startswith('keyword:'):
+        return TYPE_PLAIN, clean_domain[8:].strip().lower()
+    elif clean_domain.startswith('domain:'):
+        return TYPE_ROOTDOMAIN, clean_domain[7:].strip().lower()
     else:
-        return TYPE_ROOTDOMAIN, rule.strip().lower()
+        return TYPE_ROOTDOMAIN, clean_domain.strip().lower()
 
 def fetch_online_list(name: str) -> List[str]:
     url = f"https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/{name}"
@@ -241,7 +268,7 @@ def main():
 
     print("Collecting AI domain rules...")
     fetched_data = {}
-    names = ['openai', 'anthropic', 'google-deepmind', 'perplexity', 'cursor', 'github-copilot', 'xai', 'poe', 'windsurf', 'huggingface', 'elevenlabs', 'groq']
+    names = ['openai', 'anthropic', 'perplexity', 'cursor', 'github-copilot', 'xai', 'poe', 'windsurf', 'huggingface', 'elevenlabs', 'groq']
     for n in names:
         lines = fetch_online_list(n)
         if lines:
@@ -264,19 +291,21 @@ def main():
         online_key = cat
         if cat == 'copilot':
             online_key = 'github-copilot'
-        elif cat == 'google-gemini':
-            online_key = 'google-deepmind'
         
         lines = list(default_lines)
         if online_key in fetched_data:
             lines.extend(fetched_data[online_key])
         add_rules(cat, lines)
 
+    # 核心聚合规则库 (ai / myai): 专注对话交互、编程助手与轻量 API，排除 GB 级大模型下载站 (如 huggingface)
+    HEAVY_TRAFFIC_CATEGORIES = {'huggingface'}
+
     all_rules: Dict[Tuple[int, str], None] = {}
     for cat, rdict in cat_rules.items():
-        all_rules.update(rdict)
+        if cat not in HEAVY_TRAFFIC_CATEGORIES:
+            all_rules.update(rdict)
     
-    print(f"Total unique rules across all AI categories: {len(all_rules)}")
+    print(f"Total unique rules across core AI categories (excluding heavy traffic): {len(all_rules)}")
 
     proto_str = """syntax = "proto3";
 package router;

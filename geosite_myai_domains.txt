@@ -1,4 +1,4 @@
-# geosite_myai.dat Domain List (165 total rules)
+# geosite_myai.dat Domain List (151 total rules)
 # Generated for AI Home Broadband Routing / 家宽分流
 
 regexp:^chatgpt-async-webps-prod-\S+-\d+\.webpubsub\.azure\.com$
@@ -27,7 +27,6 @@ chat.com
 chatgpt.com
 chatgpt.livekit.cloud
 chatgpt.site
-civitai.com
 clau.de
 claude.ai
 claude.com
@@ -47,7 +46,9 @@ copilot.com
 copilot.microsoft.com
 crewai.com
 crixet.com
+cursor-assets.com
 cursor-cdn.com
+cursor.blob.core.windows.net
 cursor.com
 cursor.sh
 cursorapi.com
@@ -56,10 +57,10 @@ daily-antigravity.sandbox.google.com
 daily-cloudcode-pa.googleapis.com
 deepmind.com
 deepmind.google
-deepseek.com
 devin.ai
 dify.ai
 elevenlabs.io
+featuregates.org
 flow.google
 geller-pa.googleapis.com
 gemini.google
@@ -72,27 +73,21 @@ grok.com
 grok.x.com
 grokipedia.com
 groq.com
-hf.co
-hf.space
 host.livekit.cloud
-huggingface.co
 jasper.ai
 jules.google
 jules.google.com
-kimi.ai
 labs.google
 labs.google.com
 langchain.com
 lechat.mistral.ai
+livekit.cloud
 lmstudio.ai
 lumalabs.ai
 makersuite.google.com
 manus.im
 midjourney.com
 mistral.ai
-moonshot.ai
-moonshot.cn
-notebook.google.com
 notebooklm-pa.googleapis.com
 notebooklm.google
 notebooklm.google.com
@@ -120,6 +115,8 @@ runway.com
 runwayml.com
 sider.ai
 sora.com
+statsig.com
+statsigapi.net
 stitch.withgoogle.com
 suno.ai
 suno.com
@@ -133,24 +130,14 @@ windsurf.ai
 windsurf.build
 windsurf.com
 x.ai
-full:ai.google.dev
-full:alkalicore-pa.clients6.google.com
-full:alkalimakersuite-pa.clients6.google.com
-full:antigravity-pa.googleapis.com
-full:antigravity.googleapis.com
 full:api.githubcopilot.com
 full:browser-intake-datadoghq.com
-full:cloudaicompanion.googleapis.com
-full:cloudcode-pa.googleapis.com
 full:copilot-proxy.githubusercontent.com
 full:copilot-telemetry-service.githubusercontent.com
 full:copilot-telemetry.githubusercontent.com
 full:copilot-workspace.githubnext.com
 full:copilotprodattachments.blob.core.windows.net
-full:daily-cloudcode-pa.googleapis.com
 full:edgeservices.bing.com
-full:notebooklm-pa.googleapis.com
-full:notebooklm.googleapis.com
 full:o33249.ingest.sentry.io
 full:openai.qualtrics.com
 full:openaiapi-site.azureedge.net
@@ -165,4 +152,3 @@ full:production-openaicom-storage.azureedge.net
 full:servd-anthropic-website.b-cdn.net
 full:sydney.bing.com
 full:usefathom.com
-full:webchannel-alkalimakersuite-pa.clients6.google.com

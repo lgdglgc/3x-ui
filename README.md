@@ -79,23 +79,31 @@ x-ui
 ## 🌟 主要优化与核心特性
 
 ### 1. 专属 AI 分流规则库 (`geosite_myai.dat`)
-为了解决自建节点访问 OpenAI / Claude / Gemini 经常遭遇 IP 限制、验证码弹窗或住宅 IP 家宽路由需求，本项目直接内置专用的 AI 规则数据库：
-- **全面覆盖**：涵盖 `OpenAI (ChatGPT / SORA)`、`Anthropic (Claude)`、`Google (Gemini / Antigravity IDE / DeepMind)`、`Microsoft (Copilot)`、`Cursor`、`Windsurf`、`Perplexity` 等核心域名及 API 端点。
+为了解决自建节点访问 OpenAI / Claude / Gemini / Antigravity 经常遭遇 IP 限制、验证码弹窗或住宅 IP 家宽路由需求，本项目直接内置专用的 AI 规则数据库并实施严格的分流防坑策略：
+
+- **全面覆盖与端点补全**：
+  - **OpenAI / ChatGPT**：涵盖 `chatgpt.com`、`sora.com`，补全 WebRTC 实时语音对讲端点（`*.livekit.cloud`）与灰度开关/鉴权接口（`featuregates.org`、`statsig.com`）。
+  - **Google 全系**：涵盖 `Gemini`、`Antigravity IDE`（包含代码生成流与测试沙箱通道）、`DeepMind`、`AI Studio`。
+  - **AI 编码与对话工具**：`Claude`、`Cursor`（包含 blob 存储与 assets）、`Windsurf`、`Copilot`、`Perplexity`、`Grok (xAI)`、`Poe` 等。
+- **🚫 严防国产 AI 误入家宽**：已彻底剔除 DeepSeek、Kimi、通义千问等纯国内 AI 服务。国内服务默认走直连（Direct），享受毫秒级极速响应，规避因绕行海外住宅 IP 引发的严重延迟与平台风控封号。
+- **📦 大文件/模型站流量隔离**：像 HuggingFace (`huggingface.co`)、Civitai 动辄数 GB ~ 几十 GB 的模型权重下载，默认**不并入** `ai` 家宽列表，防止瞬间跑爆昂贵的家宽限额或拥塞上行带宽；如有需要，可使用独立标签 `ext:geosite_myai.dat:huggingface` 单独分流。
+- **⚠️ 关键网络配置（支持语音模式）**：在 3X-UI 面板配置 AI 路由规则时，**网络协议（Network）务必留空或选择 `tcp,udp`**，切勿仅勾选 `tcp`，否则 ChatGPT 高级实时语音模式（WebRTC 依赖 UDP）将无法接通。
 - **全链路自动部署**：`install.sh` 与 `update.sh` 在安装或更新时，自动将 `geosite_myai.dat` 下载并配置到 `/usr/local/x-ui/bin/`。
-- **面板原生支持**：3X-UI 面板的路由规则下拉菜单中已原生支持自定义规则库，可直接设置 `ext:geosite_myai.dat:ai`（或单独指定 `ext:geosite_myai.dat:antigravity`）规则将 AI 流量引流到住宅家宽出站。
 
 ```
-┌────────────────────────────────────────────────────────┐
-│                   3X-UI 流量路由架构                    │
-│                                                        │
-│  客户端流量 ──► [ Xray 路由引擎 ]                       │
-│                      │                                 │
-│                      ├─► 命中 geosite_myai.dat ──► [AI 家宽/解锁出口] │
-│                      │                                 │
-│                      ├─► 命中 geosite:cn / geoip:cn ──► [直连 Direct]   │
-│                      │                                 │
-│                      └─► 默认外网流量 ─────────────► [主力 VPS 出口]  │
-└────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                    3X-UI 生产级流量路由架构                     │
+│                                                                 │
+│  客户端流量 ──► [ Xray 路由引擎 ]                                │
+│                      │                                          │
+│                      ├─► 命中 geosite_myai.dat:ai ────────────► [AI 家宽/解锁出口 (TCP+UDP)] │
+│                      │   (ChatGPT/Claude/Gemini/Antigravity...) │
+│                      │                                          │
+│                      ├─► 命中 geosite:cn / geoip:cn ──────────► [直连 Direct]                │
+│                      │   (DeepSeek/Kimi/国内常规流量)           │
+│                      │                                          │
+│                      └─► 默认外网流量 ────────────────────────► [主力 VPS 出口]             │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ### 2. 深度中文汉化与纯净体验
@@ -201,9 +209,10 @@ x-ui
 1. 登录 3X-UI 网页后台，点击左侧菜单的 **【面板设置】 ➔ 【路由设置】**。
 2. 在出站规则（Outbounds）中添加您的家宽出口或特定落地节点（Outbound Tag 例如命名为 `ai_out`）。
 3. 在路由规则中添加一条新规则：
-   - **域名匹配 (geosite)**：输入 `ext:geosite_myai.dat:ai`
+   - **域名匹配 (geosite)**：输入 `ext:geosite_myai.dat:ai`（或仅分流指定项如 `ext:geosite_myai.dat:antigravity`）
+   - **网络协议 (Network)**：**务必留空或填写 `tcp,udp`**（支持 ChatGPT 实时语音 WebRTC 通话，切勿仅勾选 `tcp`）
    - **出站标签 (Outbound)**：选择对应的 `ai_out`
-4. 保存配置并点击右上角【重启面板】即可实现 ChatGPT/Claude 等请求自动走专用通道，普通流量直连或走主力节点。
+4. 保存配置并点击右上角【重启面板】即可实现 ChatGPT/Claude/Antigravity 等请求自动走专用通道，DeepSeek/Kimi 等国内流量直连，大文件下载不走家宽。
 
 ### Q2: 为什么终端菜单一更新容易变成英文原版？
 由于上游预编译的归档包中自带官方英文脚本，若曾使用官方菜单选项或通过原版后台触发更新，会重新拉取原版文件。
