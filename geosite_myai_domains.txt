@@ -1,7 +1,8 @@
-# geosite_myai.dat Domain List (173 total rules)
+# geosite_myai.dat Domain List (181 total rules)
 # Generated for AI Home Broadband Routing / 家宽分流
 
 regexp:^chatgpt-async-webps-prod-\S+-\d+\.webpubsub\.azure\.com$
+accounts.google.com
 ai.google.dev
 ai.studio
 aicode.googleapis.com
@@ -19,6 +20,7 @@ antigravity.googleapis.com
 antigravity.sandbox.google.com
 anythingllm.com
 api.x.ai
+apis.google.com
 arena.ai
 assets.grok.com
 augmentcode.com
@@ -79,11 +81,13 @@ gemini.google.com
 gemini.gstatic.com
 generativeai.google
 generativelanguage.googleapis.com
+generativelanguage.googleusercontent.com
 githubcopilot.com
 grok.com
 grok.x.com
 grokipedia.com
 groq.com
+gstatic.com
 heygen.com
 host.livekit.cloud
 jan.ai
@@ -94,6 +98,7 @@ labs.google
 labs.google.com
 langchain.com
 lechat.mistral.ai
+lh3.googleusercontent.com
 livekit.cloud
 lmstudio.ai
 lobehub.com
@@ -102,6 +107,7 @@ makersuite.google.com
 manus.im
 midjourney.com
 mistral.ai
+myaccount.google.com
 notebooklm-pa.googleapis.com
 notebooklm.google
 notebooklm.google.com
@@ -111,6 +117,7 @@ notion.so
 oaistatic.com
 oaistatsig.com
 oaiusercontent.com
+oauth2.googleapis.com
 ollama.com
 opal.google
 opal.google.com
@@ -168,6 +175,7 @@ full:openaicom-api-bdcpf8c6d2e9atf6.z01.azurefd.net
 full:openaicom.imgix.net
 full:openaicomproductionae4b.blob.core.windows.net
 full:origin-tracker.githubusercontent.com
+full:play.google.com
 full:ppl-ai-file-upload.s3.amazonaws.com
 full:pplx-res.cloudinary.com
 full:production-openaicom-storage.azureedge.net

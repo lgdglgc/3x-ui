@@ -251,6 +251,48 @@ x-ui
   或者在终端使用内置命令更新全部规则：`x-ui update-all-geofiles`。
 - **自动跟随面板更新**：本项目的 `update.sh` 在更新面板时，已自动内置拉取最新 `geosite_myai.dat` 的逻辑，因此每次更新面板都会自动保持最新。
 
+### Q6: 访问 Google Gemini 提示“检测到异常流量 (IP 地址：A ≠ B)”是什么原因？如何彻底解决？
+#### 1. 现象本质分析
+用户常见报错如下：
+```text
+我们的系统检测到您的计算机网络中存在异常流量。请稍后重新发送请求。
+IP 地址：103.11.76.42 ≠ 104.28.227.187 时间：2026-09-20T10:13:59Z 网址：https://gemini.google.com/
+```
+- **`103.11.76.42`**：服务器购买的原生机房 IP（走 `direct` 直连出站）。
+- **`104.28.227.187`**：Cloudflare WARP（或住宅落地 IP）出站。
+- **根本原因**：Google 具有极为严格的 **SSO 会话跨 IP 一致性校验**。当访问 Gemini 网页端时，浏览器同时发起页面流式连接（`gemini.google.com`）、账号鉴权校验（`accounts.google.com`、`apis.google.com`）、静态安全脚本（`gstatic.com`）以及 HTTP/3 (QUIC / UDP 443) 请求。若分流规则不完整或入站未嗅探，会导致页面主体走了 WARP，而底层鉴权或 UDP 协议漏网回了 VPS 原生 IP，Google 安全风控判定账号存在**会话劫持（Session Hijacking）或双 IP 异常并发**，立刻直接阻断。
+
+#### 2. 彻底解决实战指南
+
+##### 第一步：配置 3X-UI 黄金双层路由（兼顾防 IP 分裂与 YouTube 免跑流量）
+很多用户担心：“如果把 Google 全丢给 WARP 或家宽，看 YouTube 岂不是跑爆流量或被限速？”
+**核心解法**：利用 Xray 路由规则**自上而下匹配、首个命中即止（First-Match）**的底层特性：
+
+1. 打开 3X-UI 后台 ➔ 【面板设置】 ➔ 【路由设置】。
+2. **规则 1（必须置顶，优先级最高）**：
+   - 域名规则：`geosite:youtube`
+   - 出站 Tag：选择 `direct`（VPS 原生直连，看 4K/8K 丝滑流畅，完全不耗 WARP 或家宽流量）。
+3. **规则 2（紧随其后）**：
+   - 域名规则：`ext:geosite_myai.dat:ai`（或追加 `geosite:google`）
+   - 网络协议：留空或填写 `tcp,udp`（**切勿仅勾选 tcp**）
+   - 出站 Tag：选择 `warp` / `ai_out`（Gemini 页面与 Google 核心鉴权完全统一出站，IP 绝对一致）。
+4. **规则 3**：
+   - 域名规则：`geosite:cn`、IP 规则：`geoip:cn`、出站 Tag：`direct`。
+
+##### 第二步：入站必须开启【嗅探 (Sniffing)】
+若客户端（Clash/v2rayN/Shadowrocket）在本地将域名解析成了目标 IP，服务端入站若未开启嗅探，Xray 只能收到纯 IP，导致 `domain` 规则全部失效而掉入默认直连。
+1. 在 3X-UI【入站列表】中点击对应节点的【编辑】。
+2. 切换到【嗅探 (Sniffing)】选项卡：
+   - **开启嗅探**：勾选 `开启`
+   - **重写目标 (destOverride)**：勾选 `http`, `tls`, `quic`, `fakedns`（**务必勾选 quic**，防止 Chrome HTTP/3 走漏）
+   - **仅路由 (routeOnly)**：建议开启。
+3. 保存并重启。
+
+##### 第三步：清理浏览器旧会话 Cookie
+由于被拦截时 Google 已在浏览器 Cookie 与 LocalStorage 中植入了阻断标记：
+1. 彻底关闭所有 Gemini 相关标签页。
+2. 打开浏览器的**无痕模式（Incognito / 隐身窗口）**，重新访问 `https://gemini.google.com/`，即可秒开顺畅使用。
+
 ---
 
 ## 📄 开源许可证

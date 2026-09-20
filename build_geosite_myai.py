@@ -107,6 +107,15 @@ BASELINE_DATA: Dict[str, List[str]] = {
         "aisandbox-pa.googleapis.com",
         "aicode.googleapis.com",
         "aida.googleapis.com",
+        # Google 账户认证与前端核心依赖 (防止与 Gemini 出现跨 IP 会话分裂拦截: IP1 ≠ IP2)
+        "accounts.google.com",
+        "myaccount.google.com",
+        "apis.google.com",
+        "oauth2.googleapis.com",
+        "gstatic.com",
+        "lh3.googleusercontent.com",
+        "generativelanguage.googleusercontent.com",
+        "full:play.google.com",
     ],
     "antigravity": [
         "antigravity.google",
