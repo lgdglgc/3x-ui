@@ -1,4 +1,4 @@
-# geosite_myai.dat Domain List (151 total rules)
+# geosite_myai.dat Domain List (173 total rules)
 # Generated for AI Home Broadband Routing / 家宽分流
 
 regexp:^chatgpt-async-webps-prod-\S+-\d+\.webpubsub\.azure\.com$
@@ -21,12 +21,16 @@ anythingllm.com
 api.x.ai
 arena.ai
 assets.grok.com
+augmentcode.com
+backend.raycast.com
 bard.google.com
 cerebras.ai
 chat.com
+chatboxai.app
 chatgpt.com
 chatgpt.livekit.cloud
 chatgpt.site
+cherry-ai.com
 clau.de
 claude.ai
 claude.com
@@ -40,6 +44,8 @@ codeium.com
 codeiumdata.com
 cohere.ai
 cohere.com
+console.mistral.ai
+continue.dev
 copilot-stg.com
 copilot.cloud.microsoft
 copilot.com
@@ -55,12 +61,17 @@ cursorapi.com
 d-id.com
 daily-antigravity.sandbox.google.com
 daily-cloudcode-pa.googleapis.com
+deepinfra.com
 deepmind.com
 deepmind.google
+descript.com
 devin.ai
 dify.ai
 elevenlabs.io
+exafunction.com
+fal.ai
 featuregates.org
+fireworks.ai
 flow.google
 geller-pa.googleapis.com
 gemini.google
@@ -73,7 +84,9 @@ grok.com
 grok.x.com
 grokipedia.com
 groq.com
+heygen.com
 host.livekit.cloud
+jan.ai
 jasper.ai
 jules.google
 jules.google.com
@@ -83,6 +96,7 @@ langchain.com
 lechat.mistral.ai
 livekit.cloud
 lmstudio.ai
+lobehub.com
 lumalabs.ai
 makersuite.google.com
 manus.im
@@ -92,6 +106,8 @@ notebooklm-pa.googleapis.com
 notebooklm.google
 notebooklm.google.com
 notebooklm.googleapis.com
+notion.com
+notion.so
 oaistatic.com
 oaistatsig.com
 oaiusercontent.com
@@ -102,6 +118,7 @@ openai.com
 openai.com.cdn.cloudflare.net
 openart.ai
 openrouter.ai
+otter.ai
 perplexity.ai
 perplexity.com
 pika.art
@@ -109,6 +126,8 @@ poe.com
 poecdn.net
 pplx.ai
 proactivebackend-pa.googleapis.com
+raycast.com
+replicate.com
 repo42.cursor.sh
 robinfrontend-pa.googleapis.com
 runway.com
@@ -120,8 +139,10 @@ statsigapi.net
 stitch.withgoogle.com
 suno.ai
 suno.com
+supermaven.com
 tether.cursor.sh
 together.ai
+together.xyz
 tripo3d.ai
 turn.livekit.cloud
 udio.com
@@ -130,6 +151,7 @@ windsurf.ai
 windsurf.build
 windsurf.com
 x.ai
+zed.dev
 full:api.githubcopilot.com
 full:browser-intake-datadoghq.com
 full:copilot-proxy.githubusercontent.com

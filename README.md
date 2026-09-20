@@ -81,10 +81,12 @@ x-ui
 ### 1. 专属 AI 分流规则库 (`geosite_myai.dat`)
 为了解决自建节点访问 OpenAI / Claude / Gemini / Antigravity 经常遭遇 IP 限制、验证码弹窗或住宅 IP 家宽路由需求，本项目直接内置专用的 AI 规则数据库并实施严格的分流防坑策略：
 
-- **全面覆盖与端点补全**：
-  - **OpenAI / ChatGPT**：涵盖 `chatgpt.com`、`sora.com`，补全 WebRTC 实时语音对讲端点（`*.livekit.cloud`）与灰度开关/鉴权接口（`featuregates.org`、`statsig.com`）。
-  - **Google 全系**：涵盖 `Gemini`、`Antigravity IDE`（包含代码生成流与测试沙箱通道）、`DeepMind`、`AI Studio`。
-  - **AI 编码与对话工具**：`Claude`、`Cursor`（包含 blob 存储与 assets）、`Windsurf`、`Copilot`、`Perplexity`、`Grok (xAI)`、`Poe` 等。
+- **全场景生态覆盖（网页端、桌面端、IDE、API网关）**：
+  - **主流商业 AI**：`OpenAI / ChatGPT`（补全 WebRTC 实时语音端点 `*.livekit.cloud` 与灰度接口 `featuregates.org`、`statsig.com`）、`Anthropic (Claude)`、`Google (Gemini / DeepMind / AI Studio)`、`Microsoft (Copilot)`、`Perplexity`、`Grok (xAI)`、`Poe`。
+  - **AI IDE 与编程插件桌面端**：`Antigravity IDE`（全套代码流与沙箱通道）、`Cursor`（包含 blob 与 assets 存储）、`Windsurf (Codeium)`（含核心底层 `exafunction.com`）、`Continue.dev`、`Supermaven`、`Augment Code`、`Zed`。
+  - **知名 AI 独立桌面客户端**：`Notion AI`（`notion.so` / `notion.com`）、`Raycast AI`（含 `backend.raycast.com`）、`Chatbox`、`Cherry Studio`、`Jan`、`LobeChat` 等。
+  - **主流云端推理与聚合 API 网关**：`OpenRouter`、`Groq`、`Together AI`、`Fireworks AI`、`DeepInfra`、`Mistral AI / Le Chat`、`Cohere`、`Fal.ai`、`Replicate`。
+  - **音视频与语音 AI**：`ElevenLabs`、`HeyGen`、`Descript`、`Otter.ai`、`Midjourney`、`Suno`、`Udio`、`Runway`、`Luma`、`Pika` 等。
 - **🚫 严防国产 AI 误入家宽**：已彻底剔除 DeepSeek、Kimi、通义千问等纯国内 AI 服务。国内服务默认走直连（Direct），享受毫秒级极速响应，规避因绕行海外住宅 IP 引发的严重延迟与平台风控封号。
 - **📦 大文件/模型站流量隔离**：像 HuggingFace (`huggingface.co`)、Civitai 动辄数 GB ~ 几十 GB 的模型权重下载，默认**不并入** `ai` 家宽列表，防止瞬间跑爆昂贵的家宽限额或拥塞上行带宽；如有需要，可使用独立标签 `ext:geosite_myai.dat:huggingface` 单独分流。
 - **⚠️ 关键网络配置（支持语音模式）**：在 3X-UI 面板配置 AI 路由规则时，**网络协议（Network）务必留空或选择 `tcp,udp`**，切勿仅勾选 `tcp`，否则 ChatGPT 高级实时语音模式（WebRTC 依赖 UDP）将无法接通。
