@@ -1164,8 +1164,8 @@ update_x-ui() {
         echo -e "${green}═══════════════════════════════════════════${plain}"
         echo -e "${green}       x-ui 面板及 Xray 核心更新设置        ${plain}"
         echo -e "${green}═══════════════════════════════════════════${plain}"
-        read -rp "请输入要更新的 x-ui 面板版本 [默认 3.4.2]: " input_version
-        [[ -z "${input_version}" ]] && input_version="3.4.2"
+        read -rp "请输入要更新的 x-ui 面板版本 [默认 3.8.5]: " input_version
+        [[ -z "${input_version}" ]] && input_version="3.8.5"
         [[ "${input_version}" =~ ^v ]] || input_version="v${input_version}"
         tag_version="${input_version}"
 

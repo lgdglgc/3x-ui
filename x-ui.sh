@@ -268,8 +268,8 @@ update_menu() {
 }
 
 legacy_version() {
-    read -rp "请输入要切换的面板版本 [默认 3.4.2]: " tag_version
-    [[ -z "$tag_version" ]] && tag_version="3.4.2"
+    read -rp "请输入要切换的面板版本 [默认 3.8.5]: " tag_version
+    [[ -z "$tag_version" ]] && tag_version="3.8.5"
     [[ "$tag_version" =~ ^v ]] || tag_version="v$tag_version"
 
     read -rp "请输入要搭配的 Xray 核心版本 [默认 v26.6.27]: " xray_version
