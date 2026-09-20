@@ -1127,13 +1127,13 @@ update_geofiles() {
 }
 
 update_geo() {
-    echo -e "${green}\t1.${plain} Loyalsoldier (geoip.dat, geosite.dat)"
-    echo -e "${green}\t2.${plain} chocolate4u (geoip_IR.dat, geosite_IR.dat)"
-    echo -e "${green}\t3.${plain} runetfreedom (geoip_RU.dat, geosite_RU.dat)"
-    echo -e "${green}\t4.${plain} MyAI (geosite_myai.dat)"
-    echo -e "${green}\t5.${plain} All"
+    echo -e "${green}\t1.${plain} 全球常规规则库 Loyalsoldier (geoip.dat, geosite.dat)"
+    echo -e "${green}\t2.${plain} 伊朗地区规则库 chocolate4u (geoip_IR.dat, geosite_IR.dat)"
+    echo -e "${green}\t3.${plain} 俄罗斯地区规则库 runetfreedom (geoip_RU.dat, geosite_RU.dat)"
+    echo -e "${green}\t4.${plain} AI 专属分流规则库 MyAI (geosite_myai.dat)"
+    echo -e "${green}\t5.${plain} 更新全部规则库 (包含 MyAI 及所有规则)"
     echo -e "${green}\t0.${plain} 返回主菜单"
-    read -rp "Choose an option: " choice
+    read -rp "请输入选项序号 [0-5]: " choice
 
     case "$choice" in
         0)
