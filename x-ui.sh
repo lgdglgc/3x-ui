@@ -255,6 +255,7 @@ update_menu() {
     fi
 
     curl -fLRo /usr/bin/x-ui https://raw.githubusercontent.com/lgdglgc/3x-ui/main/x-ui.sh
+    cp -f /usr/bin/x-ui ${xui_folder}/x-ui.sh > /dev/null 2>&1 || true
     chmod +x ${xui_folder}/x-ui.sh
     chmod +x /usr/bin/x-ui
 
@@ -771,13 +772,15 @@ enable_bbr() {
 }
 
 update_shell() {
-    curl -fLRo /usr/bin/x-ui -z /usr/bin/x-ui https://raw.githubusercontent.com/lgdglgc/3x-ui/main/x-ui.sh
+    curl -fLRo /usr/bin/x-ui https://raw.githubusercontent.com/lgdglgc/3x-ui/main/x-ui.sh
+    cp -f /usr/bin/x-ui ${xui_folder}/x-ui.sh > /dev/null 2>&1 || true
+    chmod +x ${xui_folder}/x-ui.sh
+    chmod +x /usr/bin/x-ui
     if [[ $? != 0 ]]; then
         echo ""
         LOGE "下载脚本失败，请检查服务器是否能正常访问 GitHub"
         before_show_menu
     else
-        chmod +x /usr/bin/x-ui
         LOGI "脚本升级成功，请重新运行脚本"
         before_show_menu
     fi

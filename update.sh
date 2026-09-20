@@ -1275,8 +1275,13 @@ update_x-ui() {
         fi
     fi
 
+    cp -f /usr/bin/x-ui ${xui_folder}/x-ui.sh > /dev/null 2>&1 || true
     chmod +x ${xui_folder}/x-ui.sh > /dev/null 2>&1
     chmod +x /usr/bin/x-ui > /dev/null 2>&1
+
+    # 将二进制中的更新源重定向至定制汉化源，防止网页端更新时被官方英文源覆盖
+    sed -i 's|raw.githubusercontent.com/MHSanaei/3x-ui/main/update.sh|raw.githubusercontent.com/lgdglgc//3x-ui/main/update.sh|g' ${xui_folder}/x-ui 2>/dev/null || true
+
     mkdir -p /var/log/x-ui > /dev/null 2>&1
 
     echo -e "${green}正在变更所有者权限...${plain}"

@@ -1520,9 +1520,15 @@ install_x-ui() {
         curl -fLRo bin/geosite_myai.dat https://raw.githubusercontent.com/lgdglgc/3x-ui/main/geosite_myai.dat 2>/dev/null || true
     fi
 
-    # Update x-ui cli and se set permission
+    # Update x-ui cli and set permission
     mv -f /usr/bin/x-ui-temp /usr/bin/x-ui
     chmod +x /usr/bin/x-ui
+    cp -f /usr/bin/x-ui ./x-ui.sh > /dev/null 2>&1 || true
+    chmod +x ./x-ui.sh > /dev/null 2>&1 || true
+
+    # 将二进制中的更新源重定向至定制汉化源，防止网页端更新时被官方英文源覆盖
+    sed -i 's|raw.githubusercontent.com/MHSanaei/3x-ui/main/update.sh|raw.githubusercontent.com/lgdglgc//3x-ui/main/update.sh|g' x-ui 2>/dev/null || true
+
     mkdir -p /var/log/x-ui
     config_after_install
 
