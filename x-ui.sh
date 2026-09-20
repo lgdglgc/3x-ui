@@ -1113,7 +1113,7 @@ update_geofiles() {
             dat_source="runetfreedom/russia-v2ray-rules-dat"
             ;;
         "MYAI")
-            curl -fLRo ${xui_folder}/bin/geosite_myai.dat -z ${xui_folder}/bin/geosite_myai.dat \
+            curl -fLRo ${xui_folder}/bin/geosite_myai.dat \
                 https://raw.githubusercontent.com/lgdglgc/3x-ui/main/geosite_myai.dat
             return 0
             ;;
