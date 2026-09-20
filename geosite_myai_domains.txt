@@ -1,4 +1,4 @@
-# geosite_myai.dat Domain List (185 total rules)
+# geosite_myai.dat Domain List (204 total rules)
 # Generated for AI Home Broadband Routing / 家宽分流
 
 regexp:^chatgpt-async-webps-prod-\S+-\d+\.webpubsub\.azure\.com$
@@ -7,6 +7,7 @@ ai.google.dev
 ai.studio
 aicode.googleapis.com
 aida.googleapis.com
+aiplatform.googleapis.com
 aisandbox-pa.googleapis.com
 aistudio.google.com
 alkalicore-pa.clients6.google.com
@@ -23,6 +24,7 @@ api.x.ai
 apis.google.com
 arena.ai
 assets.grok.com
+assistant.google.com
 augmentcode.com
 backend.raycast.com
 bard.google.com
@@ -68,13 +70,17 @@ deepmind.com
 deepmind.google
 descript.com
 devin.ai
+dialogflow.googleapis.com
 dify.ai
+discoveryengine.googleapis.com
 elevenlabs.io
 exafunction.com
+experiments.withgoogle.com
 fal.ai
 featuregates.org
 fireworks.ai
 flow.google
+flow.google.com
 geller-pa.googleapis.com
 gemini.google
 gemini.google.com
@@ -111,6 +117,7 @@ manus.im
 midjourney.com
 mistral.ai
 myaccount.google.com
+notebook.google
 notebook.google.com
 notebooklm-pa.googleapis.com
 notebooklm.google
@@ -157,20 +164,31 @@ together.xyz
 tripo3d.ai
 turn.livekit.cloud
 udio.com
+waa-pa.clients6.google.com
 webchannel-alkalimakersuite-pa.clients6.google.com
 windsurf.ai
 windsurf.build
 windsurf.com
 x.ai
 zed.dev
+full:ai.google.dev
+full:alkalicore-pa.clients6.google.com
+full:alkalimakersuite-pa.clients6.google.com
+full:antigravity-pa.googleapis.com
+full:antigravity.googleapis.com
 full:api.githubcopilot.com
 full:browser-intake-datadoghq.com
+full:cloudaicompanion.googleapis.com
+full:cloudcode-pa.googleapis.com
 full:copilot-proxy.githubusercontent.com
 full:copilot-telemetry-service.githubusercontent.com
 full:copilot-telemetry.githubusercontent.com
 full:copilot-workspace.githubnext.com
 full:copilotprodattachments.blob.core.windows.net
+full:daily-cloudcode-pa.googleapis.com
 full:edgeservices.bing.com
+full:notebooklm-pa.googleapis.com
+full:notebooklm.googleapis.com
 full:o33249.ingest.sentry.io
 full:openai.qualtrics.com
 full:openaiapi-site.azureedge.net
@@ -186,3 +204,4 @@ full:production-openaicom-storage.azureedge.net
 full:servd-anthropic-website.b-cdn.net
 full:sydney.bing.com
 full:usefathom.com
+full:webchannel-alkalimakersuite-pa.clients6.google.com

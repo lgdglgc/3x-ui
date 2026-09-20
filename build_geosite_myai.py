@@ -76,12 +76,14 @@ BASELINE_DATA: Dict[str, List[str]] = {
         "makersuite.google.com",
         "notebooklm.google",
         "notebooklm.google.com",
+        "notebook.google",
         "notebook.google.com",
         "jules.google",
         "jules.google.com",
         "labs.google",
         "labs.google.com",
         "flow.google",
+        "flow.google.com",
         "opal.google",
         "opal.google.com",
         "antigravity.google",
@@ -108,6 +110,12 @@ BASELINE_DATA: Dict[str, List[str]] = {
         "aisandbox-pa.googleapis.com",
         "aicode.googleapis.com",
         "aida.googleapis.com",
+        "aiplatform.googleapis.com",
+        "discoveryengine.googleapis.com",
+        "dialogflow.googleapis.com",
+        "experiments.withgoogle.com",
+        "assistant.google.com",
+        "waa-pa.clients6.google.com",
         # Google 根域名与全系核心鉴权 (让 Gemini、Google SSO 登录会话与静态资产全部统一走同一出口，避免跨 IP 拦截)
         # 注意: YouTube 核心视频流域名 (youtube.com, googlevideo.com, ytimg.com) 均为独立根域名，完全不受此影响
         "google.com",
@@ -317,7 +325,7 @@ def main():
 
     print("Collecting AI domain rules...")
     fetched_data = {}
-    names = ['openai', 'anthropic', 'perplexity', 'cursor', 'github-copilot', 'xai', 'poe', 'windsurf', 'huggingface', 'elevenlabs', 'groq']
+    names = ['openai', 'anthropic', 'perplexity', 'cursor', 'github-copilot', 'xai', 'poe', 'windsurf', 'huggingface', 'elevenlabs', 'groq', 'google-deepmind']
     for n in names:
         lines = fetch_online_list(n)
         if lines:
@@ -340,6 +348,8 @@ def main():
         online_key = cat
         if cat == 'copilot':
             online_key = 'github-copilot'
+        elif cat == 'google-gemini':
+            online_key = 'google-deepmind'
         
         lines = list(default_lines)
         if online_key in fetched_data:
