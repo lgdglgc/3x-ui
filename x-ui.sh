@@ -683,92 +683,768 @@ show_log() {
     fi
 }
 
+# ==============================================================================
+# BBR 网络加速与内核管理模块 (Enhanced BBR & TCP Network Optimization)
+# ==============================================================================
+
+XUI_BBR_SYSCTL="/etc/sysctl.d/99-3x-ui-bbr.conf"
+XUI_QDISC_MODULES="/etc/modules-load.d/3x-ui-qdisc.conf"
+XUI_SECURITY_MODPROBE="/etc/modprobe.d/99-3x-ui-security.conf"
+BBR_GITHUB_API="https://api.github.com/repos/byJoey/Actions-bbr-v3/releases"
+
+bbr_detect_virt() {
+    local virt="none"
+    if command -v systemd-detect-virt >/dev/null 2>&1; then
+        virt=$(systemd-detect-virt 2>/dev/null || echo "none")
+    elif [ -f /.dockerenv ]; then
+        virt="docker"
+    elif grep -qa container=lxc /proc/1/environ 2>/dev/null; then
+        virt="lxc"
+    elif [ -d /proc/vz ]; then
+        virt="openvz"
+    fi
+    echo "$virt"
+}
+
+before_bbr_menu() {
+    echo && echo -n -e "${yellow}按回车键返回 BBR 管理菜单: ${plain}" && read -r temp
+    bbr_menu
+}
+
+bbr_clean_sysctl() {
+    rm -f "/etc/sysctl.d/99-bbr-x-ui.conf"
+    rm -f "/etc/sysctl.d/99-joeyblog.conf"
+    rm -f "/etc/modules-load.d/joeyblog-qdisc.conf"
+    rm -f "/etc/modprobe.d/99-joeyblog-security.conf"
+    if [[ -f "$XUI_BBR_SYSCTL" ]]; then
+        rm -f "$XUI_BBR_SYSCTL"
+    fi
+    if [[ -f "/etc/sysctl.conf" ]]; then
+        sed -i '/net.core.default_qdisc/d' /etc/sysctl.conf
+        sed -i '/net.ipv4.tcp_congestion_control/d' /etc/sysctl.conf
+        sed -i '/net.core.rmem_max/d' /etc/sysctl.conf
+        sed -i '/net.core.wmem_max/d' /etc/sysctl.conf
+        sed -i '/net.ipv4.tcp_wmem/d' /etc/sysctl.conf
+        sed -i '/net.ipv4.tcp_rmem/d' /etc/sysctl.conf
+    fi
+}
+
+bbr_load_qdisc_module() {
+    local qdisc="$1"
+    local mod="sch_${qdisc}"
+    if ! lsmod 2>/dev/null | grep -q "^${mod//-/_}"; then
+        modprobe "$mod" >/dev/null 2>&1 || true
+    fi
+    if sysctl -w net.core.default_qdisc="$qdisc" >/dev/null 2>&1; then
+        return 0
+    fi
+    return 1
+}
+
+bbr_apply_qdisc_interfaces() {
+    local qdisc="$1"
+    if ! command -v tc >/dev/null 2>&1; then
+        if command -v apt-get >/dev/null 2>&1; then
+            apt-get update >/dev/null 2>&1 && apt-get install -y iproute2 >/dev/null 2>&1 || true
+        elif command -v dnf >/dev/null 2>&1; then
+            dnf install -y iproute-tc >/dev/null 2>&1 || true
+        elif command -v yum >/dev/null 2>&1; then
+            yum install -y iproute-tc >/dev/null 2>&1 || true
+        fi
+    fi
+    if command -v tc >/dev/null 2>&1 && command -v ip >/dev/null 2>&1; then
+        local ifaces
+        ifaces=$(ip -o route show default 2>/dev/null | awk '{for (i=1;i<=NF;i++) if ($i=="dev") print $(i+1)}' | sort -u)
+        for iface in $ifaces; do
+            [[ -n "$iface" ]] && tc qdisc replace dev "$iface" root "$qdisc" >/dev/null 2>&1 || true
+        done
+    fi
+}
+
+bbr_persist_qdisc() {
+    local qdisc="$1"
+    local mod="sch_${qdisc}"
+    if [[ "$qdisc" == "fq" ]]; then
+        rm -f "$XUI_QDISC_MODULES"
+        return 0
+    fi
+    if modinfo "$mod" >/dev/null 2>&1 || lsmod 2>/dev/null | grep -q "^${mod//-/_}"; then
+        mkdir -p /etc/modules-load.d
+        echo "$mod" > "$XUI_QDISC_MODULES"
+    fi
+}
+
+bbr_enable_native() {
+    LOGI "正在启用系统原生 BBR 加速..."
+    bbr_load_qdisc_module "fq"
+    bbr_apply_qdisc_interfaces "fq"
+
+    sysctl -w net.core.default_qdisc="fq" >/dev/null 2>&1
+    sysctl -w net.ipv4.tcp_congestion_control="bbr" >/dev/null 2>&1
+
+    mkdir -p /etc/sysctl.d
+    bbr_clean_sysctl
+    cat << 'EOF' > "$XUI_BBR_SYSCTL"
+# 3X-UI Native BBR Configuration
+net.core.default_qdisc = fq
+net.ipv4.tcp_congestion_control = bbr
+EOF
+    sysctl --system >/dev/null 2>&1 || sysctl -p >/dev/null 2>&1
+
+    local new_algo=$(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null)
+    local new_qdisc=$(sysctl -n net.core.default_qdisc 2>/dev/null)
+    if [[ "$new_algo" == "bbr" ]]; then
+        LOGI "已成功启用 BBR 加速！(拥塞算法: ${new_algo}, 队列调度: ${new_qdisc})"
+    else
+        LOGE "启用 BBR 失败，当前内核可能缺少 tcp_bbr 模块支持。当前拥塞算法为: ${new_algo}"
+    fi
+    before_bbr_menu
+}
+
+bbr_switch_qdisc_menu() {
+    echo -e "
+╔────────────────────────────────────────────────╗
+│           请选择要切换的队列调度算法           │
+│────────────────────────────────────────────────│
+│   ${green}1.${plain} FQ (Fair Queueing - 推荐默认)              │
+│   ${green}2.${plain} FQ_CODEL (抗缓冲膨胀/低延迟)               │
+│   ${green}3.${plain} CAKE (Comprehensive Queue Management)     │
+│   ${green}4.${plain} FQ_PIE (Proportional Integral controller) │
+│   ${green}0.${plain} 返回上一级                                │
+╚────────────────────────────────────────────────╝"
+    read -rp "请输入选项 [0-4]: " q_choice
+    local target_qdisc=""
+    case "$q_choice" in
+        1) target_qdisc="fq" ;;
+        2) target_qdisc="fq_codel" ;;
+        3) target_qdisc="cake" ;;
+        4) target_qdisc="fq_pie" ;;
+        0) bbr_menu; return ;;
+        *) LOGE "输入无效序号！"; bbr_switch_qdisc_menu; return ;;
+    esac
+
+    LOGI "正在尝试加载并切换队列调度算法至 ${target_qdisc}..."
+    if ! bbr_load_qdisc_module "$target_qdisc"; then
+        LOGE "当前内核缺少 sch_${target_qdisc} 模块，无法切换至 ${target_qdisc}。"
+        before_bbr_menu
+        return 1
+    fi
+
+    bbr_apply_qdisc_interfaces "$target_qdisc"
+    bbr_persist_qdisc "$target_qdisc"
+
+    mkdir -p /etc/sysctl.d
+    if [[ ! -f "$XUI_BBR_SYSCTL" ]]; then
+        echo "net.ipv4.tcp_congestion_control = bbr" > "$XUI_BBR_SYSCTL"
+    fi
+    sed -i '/net.core.default_qdisc/d' "$XUI_BBR_SYSCTL"
+    echo "net.core.default_qdisc = ${target_qdisc}" >> "$XUI_BBR_SYSCTL"
+    sysctl -w net.core.default_qdisc="${target_qdisc}" >/dev/null 2>&1
+
+    LOGI "队列算法已成功切换为: ${target_qdisc}"
+    before_bbr_menu
+}
+
+bbr_apply_apac_tuning() {
+    LOGI "正在应用亚太/跨国线路 TCP 智能调优配置..."
+    bbr_load_qdisc_module "fq"
+    bbr_apply_qdisc_interfaces "fq"
+
+    sysctl -w net.core.default_qdisc="fq" >/dev/null 2>&1
+    sysctl -w net.ipv4.tcp_congestion_control="bbr" >/dev/null 2>&1
+    sysctl -w net.ipv4.tcp_wmem="4096 16384 12582912" >/dev/null 2>&1
+    sysctl -w net.ipv4.tcp_rmem="4096 131072 33554432" >/dev/null 2>&1
+    sysctl -w net.ipv4.tcp_limit_output_bytes="4194304" >/dev/null 2>&1
+    sysctl -w net.ipv4.tcp_slow_start_after_idle="0" >/dev/null 2>&1
+
+    mkdir -p /etc/sysctl.d
+    bbr_clean_sysctl
+    cat << 'EOF' > "$XUI_BBR_SYSCTL"
+# 3X-UI Asia-Pacific TCP Tuning
+net.core.default_qdisc = fq
+net.ipv4.tcp_congestion_control = bbr
+net.ipv4.tcp_wmem = 4096 16384 12582912
+net.ipv4.tcp_rmem = 4096 131072 33554432
+net.ipv4.tcp_limit_output_bytes = 4194304
+net.ipv4.tcp_slow_start_after_idle = 0
+EOF
+    sysctl --system >/dev/null 2>&1 || sysctl -p >/dev/null 2>&1
+    LOGI "✔ 亚太/跨国线路 TCP 调优已生效并永久写入: $XUI_BBR_SYSCTL"
+    before_bbr_menu
+}
+
+bbr_get_ram_cap_mb() {
+    local mem_kb
+    mem_kb=$(awk '/MemTotal:/ {print $2}' /proc/meminfo 2>/dev/null)
+    if ! [[ "$mem_kb" =~ ^[0-9]+$ ]]; then
+        echo 64
+    elif (( mem_kb < 524288 )); then
+        echo 16
+    elif (( mem_kb < 1048576 )); then
+        echo 32
+    else
+        echo 64
+    fi
+}
+
+bbr_apply_smart_tuning() {
+    echo -e "
+╔────────────────────────────────────────────────╗
+│           BBR 智能带宽与延迟缓冲优化           │
+│────────────────────────────────────────────────│
+│ 说明：根据节点真实带宽与跨国 RTT 延迟，结合系统│
+│ 内存保护上限，自动计算并配置最优 TCP 缓冲大小。│
+╚────────────────────────────────────────────────╝"
+
+    local bandwidth_mbps=""
+    read -rp "请输入节点上传带宽 (Mbps，直接回车默认 1000): " bandwidth_mbps
+    bandwidth_mbps="${bandwidth_mbps:-1000}"
+    if ! [[ "$bandwidth_mbps" =~ ^[0-9]+$ ]] || (( bandwidth_mbps <= 0 )); then
+        bandwidth_mbps=1000
+    fi
+
+    echo -e "\n请选择网络主要链路模式:"
+    echo -e " 1. 亚太区域线路 (通常 RTT < 100ms)"
+    echo -e " 2. 欧美/跨大洲线路 (通常 RTT 150-300ms)"
+    read -rp "请选择 [1-2，默认 1]: " mode_choice
+    mode_choice="${mode_choice:-1}"
+
+    local cap_mb
+    cap_mb=$(bbr_get_ram_cap_mb)
+    local buffer_mb=16
+    if [[ "$mode_choice" == "2" ]]; then
+        if (( bandwidth_mbps < 500 )); then
+            buffer_mb=16
+        elif (( bandwidth_mbps < 1000 )); then
+            buffer_mb=48
+        else
+            buffer_mb=64
+        fi
+    else
+        if (( bandwidth_mbps < 500 )); then
+            buffer_mb=8
+        elif (( bandwidth_mbps < 1000 )); then
+            buffer_mb=12
+        elif (( bandwidth_mbps < 2000 )); then
+            buffer_mb=16
+        elif (( bandwidth_mbps < 5000 )); then
+            buffer_mb=24
+        else
+            buffer_mb=32
+        fi
+    fi
+
+    if (( buffer_mb > cap_mb )); then
+        buffer_mb="$cap_mb"
+    fi
+    local buffer_bytes=$((buffer_mb * 1024 * 1024))
+    local output_bytes=4194304
+
+    LOGI "计算得出推荐配置: 缓冲大小 ${buffer_mb}MB (内存保护上限 ${cap_mb}MB)"
+    bbr_load_qdisc_module "fq"
+    bbr_apply_qdisc_interfaces "fq"
+
+    sysctl -w net.core.default_qdisc=fq >/dev/null 2>&1
+    sysctl -w net.ipv4.tcp_congestion_control=bbr >/dev/null 2>&1
+    sysctl -w net.core.rmem_max="$buffer_bytes" >/dev/null 2>&1
+    sysctl -w net.core.wmem_max="$buffer_bytes" >/dev/null 2>&1
+    sysctl -w net.ipv4.tcp_wmem="4096 65536 $buffer_bytes" >/dev/null 2>&1
+    sysctl -w net.ipv4.tcp_rmem="4096 87380 $buffer_bytes" >/dev/null 2>&1
+    sysctl -w net.ipv4.tcp_limit_output_bytes="$output_bytes" >/dev/null 2>&1
+    sysctl -w net.ipv4.tcp_slow_start_after_idle="0" >/dev/null 2>&1
+
+    mkdir -p /etc/sysctl.d
+    bbr_clean_sysctl
+    cat << EOF > "$XUI_BBR_SYSCTL"
+# 3X-UI Smart Bandwidth Tuning (${bandwidth_mbps}Mbps, Buffer: ${buffer_mb}MB)
+net.core.default_qdisc = fq
+net.ipv4.tcp_congestion_control = bbr
+net.core.rmem_max = $buffer_bytes
+net.core.wmem_max = $buffer_bytes
+net.ipv4.tcp_wmem = 4096 65536 $buffer_bytes
+net.ipv4.tcp_rmem = 4096 87380 $buffer_bytes
+net.ipv4.tcp_limit_output_bytes = $output_bytes
+net.ipv4.tcp_slow_start_after_idle = 0
+EOF
+    sysctl --system >/dev/null 2>&1 || sysctl -p >/dev/null 2>&1
+    LOGI "✔ 智能带宽优化配置已生效并持久化！"
+    before_bbr_menu
+}
+
+bbr_apply_extreme_tuning() {
+    echo -e "
+╔────────────────────────────────────────────────╗
+│           BBR 极限测速挑战模式 (疯批模式)      │
+│────────────────────────────────────────────────│
+│ ${red}警告：该模式专用于自有链路极限测速压榨吞吐！${plain}    │
+│ 会显著拉大缓冲区(1GB)及网卡队列长度(100000)，  │
+│ 日常多用户生产环境可能增加内存占用与排队抖动。 │
+╚────────────────────────────────────────────────╝"
+    confirm "是否确认开启极限测速挑战模式？" "n" || { bbr_menu; return 0; }
+
+    LOGI "正在配置极限测速参数..."
+    local buffer_bytes="1073741824"
+    local output_bytes="268435456"
+    local backlog="1000000"
+    local txqueuelen="100000"
+
+    bbr_load_qdisc_module "fq"
+    bbr_apply_qdisc_interfaces "fq"
+
+    if command -v ip >/dev/null 2>&1; then
+        local ifaces
+        ifaces=$(ip -o route show default 2>/dev/null | awk '{for (i=1;i<=NF;i++) if ($i=="dev") print $(i+1)}' | sort -u)
+        for iface in $ifaces; do
+            [[ -n "$iface" ]] && ip link set dev "$iface" txqueuelen "$txqueuelen" 2>/dev/null || true
+        done
+    fi
+
+    sysctl -w net.core.default_qdisc="fq" >/dev/null 2>&1
+    sysctl -w net.ipv4.tcp_congestion_control="bbr" >/dev/null 2>&1
+    sysctl -w net.core.rmem_max="$buffer_bytes" >/dev/null 2>&1
+    sysctl -w net.core.wmem_max="$buffer_bytes" >/dev/null 2>&1
+    sysctl -w net.core.optmem_max="$buffer_bytes" >/dev/null 2>&1
+    sysctl -w net.core.netdev_max_backlog="$backlog" >/dev/null 2>&1
+    sysctl -w net.core.somaxconn="65535" >/dev/null 2>&1
+    sysctl -w net.ipv4.tcp_wmem="4096 1048576 $buffer_bytes" >/dev/null 2>&1
+    sysctl -w net.ipv4.tcp_rmem="4096 1048576 $buffer_bytes" >/dev/null 2>&1
+    sysctl -w net.ipv4.tcp_limit_output_bytes="$output_bytes" >/dev/null 2>&1
+    sysctl -w net.ipv4.tcp_slow_start_after_idle="0" >/dev/null 2>&1
+    sysctl -w net.ipv4.tcp_notsent_lowat="4294967295" >/dev/null 2>&1
+    sysctl -w net.ipv4.tcp_autocorking="0" >/dev/null 2>&1
+    sysctl -w net.ipv4.tcp_no_metrics_save="1" >/dev/null 2>&1
+    sysctl -w net.ipv4.tcp_mtu_probing="1" >/dev/null 2>&1
+    sysctl -w net.ipv4.tcp_fastopen="3" >/dev/null 2>&1
+    sysctl -w net.ipv4.tcp_window_scaling="1" >/dev/null 2>&1
+    sysctl -w net.ipv4.tcp_moderate_rcvbuf="1" >/dev/null 2>&1
+    sysctl -w net.ipv4.tcp_ecn="0" >/dev/null 2>&1
+
+    mkdir -p /etc/sysctl.d
+    bbr_clean_sysctl
+    cat << EOF > "$XUI_BBR_SYSCTL"
+# 3X-UI Extreme Benchmark Tuning
+net.core.default_qdisc = fq
+net.ipv4.tcp_congestion_control = bbr
+net.core.rmem_max = $buffer_bytes
+net.core.wmem_max = $buffer_bytes
+net.core.optmem_max = $buffer_bytes
+net.core.netdev_max_backlog = $backlog
+net.core.somaxconn = 65535
+net.ipv4.tcp_wmem = 4096 1048576 $buffer_bytes
+net.ipv4.tcp_rmem = 4096 1048576 $buffer_bytes
+net.ipv4.tcp_limit_output_bytes = $output_bytes
+net.ipv4.tcp_slow_start_after_idle = 0
+net.ipv4.tcp_notsent_lowat = 4294967295
+net.ipv4.tcp_autocorking = 0
+net.ipv4.tcp_no_metrics_save = 1
+net.ipv4.tcp_mtu_probing = 1
+net.ipv4.tcp_fastopen = 3
+net.ipv4.tcp_window_scaling = 1
+net.ipv4.tcp_moderate_rcvbuf = 1
+net.ipv4.tcp_ecn = 0
+EOF
+    sysctl --system >/dev/null 2>&1 || sysctl -p >/dev/null 2>&1
+    LOGI "✔ 极限测速挑战模式已配置完成！"
+    before_bbr_menu
+}
+
+bbr_clear_all_tuning() {
+    confirm "确认清空所有 BBR 网络优化参数并恢复系统默认？" "y" || { bbr_menu; return 0; }
+    LOGI "正在清空所有网络优化参数..."
+    bbr_clean_sysctl
+    rm -f "$XUI_QDISC_MODULES"
+
+    sysctl -w net.core.default_qdisc="pfifo_fast" >/dev/null 2>&1 || true
+    sysctl -w net.ipv4.tcp_congestion_control="cubic" >/dev/null 2>&1 || true
+    sysctl --system >/dev/null 2>&1 || sysctl -p >/dev/null 2>&1 || true
+
+    LOGI "✔ 已成功清空优化配置并恢复系统默认设置 (CUBIC + pfifo_fast)。"
+    before_bbr_menu
+}
+
+bbr_v3_assert_env() {
+    local virt
+    virt=$(bbr_detect_virt)
+    if [[ "$virt" =~ ^(lxc|openvz|docker|podman|container) ]]; then
+        LOGE "检测到当前处于容器虚拟化环境 (${virt})，无法更换宿主机内核！"
+        LOGW "提示：容器与宿主机共享内核。请使用选项 1-6 启用原生 BBR 加速与网络调优。"
+        return 1
+    fi
+
+    if [[ "$release" != "ubuntu" && "$release" != "debian" ]]; then
+        LOGE "BBR v3 预编译内核仅支持 Ubuntu 24.04+ 及 Debian 12+ 系统。"
+        LOGW "您当前的系统为: ${release}。建议直接使用选项 1-6 启用原生 BBR 及 TCP 优化。"
+        return 1
+    fi
+
+    local arch
+    arch=$(uname -m)
+    if [[ "$arch" != "x86_64" && "$arch" != "aarch64" ]]; then
+        LOGE "BBR v3 预编译内核仅支持 x86_64 及 aarch64 (ARM64) 架构，当前架构为: ${arch}"
+        return 1
+    fi
+
+    if ! command -v dpkg >/dev/null 2>&1 || ! command -v apt-get >/dev/null 2>&1; then
+        LOGE "当前系统缺少 dpkg 或 apt-get 工具，无法安装内核包。"
+        return 1
+    fi
+
+    for cmd in curl wget dpkg jq; do
+        if ! command -v "$cmd" >/dev/null 2>&1; then
+            LOGI "正在安装必要依赖: $cmd..."
+            apt-get update >/dev/null 2>&1 && apt-get install -y "$cmd" >/dev/null 2>&1 || true
+        fi
+    done
+    return 0
+}
+
+bbr_v3_update_bootloader() {
+    LOGI "正在更新系统引导加载程序 (update-grub)..."
+    if command -v update-grub >/dev/null 2>&1; then
+        if update-grub; then
+            LOGI "✔ GRUB 引导配置更新成功！"
+            return 0
+        else
+            LOGE "GRUB 引导更新失败，请检查引导配置！"
+            return 1
+        fi
+    else
+        LOGW "未检测到 update-grub 命令，可能使用的是非 GRUB 引导（如 U-Boot），内核安装程序将尝试自动配置引导。"
+        return 0
+    fi
+}
+
+bbr_v3_download_and_install() {
+    local release_json="$1"
+    local tag_name="$2"
+
+    local asset_urls
+    asset_urls=$(echo "$release_json" | jq -r --arg tag "$tag_name" '
+        .[] | select(.tag_name == $tag) | .assets[].browser_download_url
+        | select(test("(-dbg_|-dbgsym_)"; "i") | not)
+    ')
+
+    if [[ -z "$asset_urls" ]]; then
+        LOGE "未在 Release ${tag_name} 中找到适用的内核安装包！"
+        return 1
+    fi
+
+    local tmp_dir="/tmp/bbrv3_debs"
+    rm -rf "$tmp_dir"
+    mkdir -p "$tmp_dir"
+
+    LOGI "开始下载 BBR v3 内核包 (${tag_name})..."
+    for url in $asset_urls; do
+        local fname
+        fname=$(basename "$url")
+        LOGI "正在下载: $fname"
+        if ! wget -q --show-progress "$url" -O "${tmp_dir}/${fname}"; then
+            LOGW "直接下载失败，尝试使用加速镜像下载..."
+            if ! wget -q --show-progress "https://ghproxy.net/${url}" -O "${tmp_dir}/${fname}"; then
+                LOGE "下载失败: $url"
+                return 1
+            fi
+        fi
+    done
+
+    for deb_file in "$tmp_dir"/*.deb; do
+        if ! dpkg-deb -I "$deb_file" >/dev/null 2>&1; then
+            LOGE "安装包完整性校验失败: $deb_file"
+            return 1
+        fi
+    done
+
+    LOGI "正在卸载已有旧版 joeyblog 内核包..."
+    local old_pkgs
+    old_pkgs=$(dpkg -l 2>/dev/null | grep "joeyblog" | awk '{print $2}' | tr '\n' ' ')
+    if [[ -n "$old_pkgs" ]]; then
+        apt-get remove --purge -y $old_pkgs >/dev/null 2>&1 || true
+    fi
+
+    LOGI "正在安装新版 BBR v3 内核..."
+    if dpkg -i "$tmp_dir"/*.deb && bbr_v3_update_bootloader; then
+        rm -rf "$tmp_dir"
+        LOGI "✔ BBR v3 内核安装并配置成功！"
+        confirm "新内核必须重启系统后方可生效，是否立即重启系统？" "y"
+        if [[ $? == 0 ]]; then
+            LOGI "系统正在重启..."
+            reboot
+        else
+            LOGW "操作完成，请稍后手动执行 'reboot' 重启系统以加载 BBR v3 内核。"
+            before_bbr_menu
+        fi
+    else
+        LOGE "内核安装或引导配置失败！请检查系统状态，暂勿重启以防引导问题。"
+        before_bbr_menu
+    fi
+}
+
+bbr_v3_install_latest() {
+    bbr_v3_assert_env || { before_bbr_menu; return 1; }
+
+    echo -e "
+╔────────────────────────────────────────────────╗
+│           请选择要安装的 BBR v3 内核版本       │
+│────────────────────────────────────────────────│
+│   ${green}1.${plain} BBR v3 标准版 (推荐日常稳定使用)          │
+│   ${green}2.${plain} BBR v3 Max 激进吞吐版 (极限测速与实验)    │
+│   ${green}0.${plain} 取消安装                                  │
+╚────────────────────────────────────────────────╝"
+    read -rp "请输入选项 [0-2，默认 1]: " profile_choice
+    profile_choice="${profile_choice:-1}"
+    local profile="standard"
+    if [[ "$profile_choice" == "2" ]]; then
+        profile="max"
+    elif [[ "$profile_choice" == "0" ]]; then
+        bbr_menu
+        return 0
+    fi
+
+    LOGI "正在从 GitHub 获取 BBR v3 最新 Release 信息..."
+    local release_json
+    release_json=$(curl -fsSL "$BBR_GITHUB_API")
+    if [[ -z "$release_json" ]]; then
+        LOGW "直接连接 GitHub 失败，尝试备用接口..."
+        release_json=$(curl -fsSL "https://ghproxy.net/${BBR_GITHUB_API}")
+    fi
+
+    if [[ -z "$release_json" ]]; then
+        LOGE "获取 GitHub Releases 信息失败，请检查网络连接。"
+        before_bbr_menu
+        return 1
+    fi
+
+    local arch=$(uname -m)
+    local arch_filter="x86_64"
+    [[ "$arch" == "aarch64" ]] && arch_filter="arm64"
+
+    local latest_tag
+    latest_tag=$(echo "$release_json" | jq -r --arg filter "$arch_filter" --arg prof "$profile" '
+        map(
+            select(.tag_name | test("^" + $filter + "-[0-9]"; "i"))
+            | select(if $prof == "max" then (.tag_name | endswith("-max")) else ((.tag_name | endswith("-max")) | not) end)
+        )
+        | sort_by(.published_at)
+        | .[-1].tag_name
+    ')
+
+    if [[ -z "$latest_tag" || "$latest_tag" == "null" ]]; then
+        LOGE "未检索到适用于架构 ${arch} 的 BBR v3 (${profile}) 内核版本！"
+        before_bbr_menu
+        return 1
+    fi
+
+    LOGI "匹配到最新可用版本: ${latest_tag}"
+    confirm "是否开始下载并安装此版本？" "y" || { bbr_menu; return 0; }
+    bbr_v3_download_and_install "$release_json" "$latest_tag"
+}
+
+bbr_v3_install_specific() {
+    bbr_v3_assert_env || { before_bbr_menu; return 1; }
+
+    LOGI "正在检索所有可用 BBR v3 版本列表..."
+    local release_json
+    release_json=$(curl -fsSL "$BBR_GITHUB_API")
+    if [[ -z "$release_json" ]]; then
+        release_json=$(curl -fsSL "https://ghproxy.net/${BBR_GITHUB_API}")
+    fi
+    if [[ -z "$release_json" ]]; then
+        LOGE "获取版本信息失败，请检查网络连接。"
+        before_bbr_menu
+        return 1
+    fi
+
+    local arch=$(uname -m)
+    local arch_filter="x86_64"
+    [[ "$arch" == "aarch64" ]] && arch_filter="arm64"
+
+    local tag_list
+    tag_list=$(echo "$release_json" | jq -r --arg filter "$arch_filter" '
+        .[]
+        | select(.tag_name | test("^" + $filter + "-[0-9]"; "i"))
+        | .tag_name
+    ')
+
+    if [[ -z "$tag_list" ]]; then
+        LOGE "未找到适用于当前架构 (${arch}) 的版本。"
+        before_bbr_menu
+        return 1
+    fi
+
+    echo -e "
+╔────────────────────────────────────────────────╗
+│           适用于当前架构的可安装版本           │
+│────────────────────────────────────────────────│"
+    local tags=()
+    local idx=1
+    while IFS= read -r tag; do
+        [[ -z "$tag" ]] && continue
+        tags+=("$tag")
+        echo -e "   ${green}${idx}.${plain} ${tag}"
+        idx=$((idx + 1))
+    done <<< "$tag_list"
+    echo -e "   ${green}0.${plain} 返回
+╚────────────────────────────────────────────────╝"
+
+    read -rp "请输入要安装的版本编号 [0-${#tags[@]}]: " tag_choice
+    if [[ "$tag_choice" == "0" || -z "$tag_choice" ]]; then
+        bbr_menu
+        return 0
+    fi
+    if ! [[ "$tag_choice" =~ ^[0-9]+$ ]] || (( tag_choice < 1 || tag_choice > ${#tags[@]} )); then
+        LOGE "输入编号无效！"
+        before_bbr_menu
+        return 1
+    fi
+
+    local selected_tag="${tags[$((tag_choice - 1))]}"
+    LOGI "已选择版本: ${selected_tag}"
+    confirm "确认下载并安装 ${selected_tag}？" "y" || { bbr_menu; return 0; }
+    bbr_v3_download_and_install "$release_json" "$selected_tag"
+}
+
+bbr_v3_uninstall() {
+    bbr_v3_assert_env || { before_bbr_menu; return 1; }
+
+    local installed_pkgs
+    installed_pkgs=$(dpkg -l 2>/dev/null | grep "joeyblog" | awk '{print $2}' | tr '\n' ' ')
+    if [[ -z "$installed_pkgs" ]]; then
+        LOGW "系统中未检测到安装过的 BBR v3 (joeyblog) 内核包。"
+        before_bbr_menu
+        return 0
+    fi
+
+    LOGW "检测到以下已安装的内核包:\n${installed_pkgs}"
+    confirm "是否确认卸载这些 BBR v3 内核包并恢复系统默认内核？" "n" || { bbr_menu; return 0; }
+
+    LOGI "正在卸载 BBR v3 内核包..."
+    apt-get remove --purge -y $installed_pkgs
+    bbr_v3_update_bootloader
+    LOGI "✔ 内核包卸载完成！"
+    confirm "需要重启系统以切换回原有内核，是否立即重启？" "y"
+    if [[ $? == 0 ]]; then
+        reboot
+    else
+        LOGW "请记得稍后手动执行 'reboot' 重启系统。"
+        before_bbr_menu
+    fi
+}
+
+bbr_apply_security_mitigations() {
+    LOGI "正在应用 Linux 内核漏洞缓解策略 (Dirty Frag 等)..."
+    mkdir -p /etc/modprobe.d
+    touch "$XUI_SECURITY_MODPROBE"
+
+    local rules=(
+        "blacklist esp4"
+        "install esp4 /bin/false"
+        "blacklist esp6"
+        "install esp6 /bin/false"
+        "blacklist rxrpc"
+        "install rxrpc /bin/false"
+    )
+    for r in "${rules[@]}"; do
+        if ! grep -Fqx "$r" "$XUI_SECURITY_MODPROBE" 2>/dev/null; then
+            echo "$r" >> "$XUI_SECURITY_MODPROBE"
+        fi
+    done
+
+    for mod in esp4 esp6 rxrpc; do
+        if lsmod 2>/dev/null | grep -q "^$mod"; then
+            modprobe -r "$mod" 2>/dev/null || true
+        fi
+    done
+
+    LOGI "✔ 安全策略已写入: ${XUI_SECURITY_MODPROBE}，隐患模块已禁用或卸载。"
+    before_bbr_menu
+}
+
 bbr_menu() {
-    echo -e "${green}\t1.${plain} 开启 BBR 加速"
-    echo -e "${green}\t2.${plain} 关闭 BBR 加速"
-    echo -e "${green}\t0.${plain} 返回主菜单"
-    read -rp "Choose an option: " choice
-    case "$choice" in
-        0)
-            show_menu
-            ;;
-        1)
-            enable_bbr
-            bbr_menu
-            ;;
-        2)
-            disable_bbr
-            bbr_menu
-            ;;
+    local kernel_ver arch virt cur_algo cur_qdisc bbr_status tuning_status
+    kernel_ver=$(uname -r)
+    arch=$(uname -m)
+    virt=$(bbr_detect_virt)
+    cur_algo=$(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null || echo "unknown")
+    cur_qdisc=$(sysctl -n net.core.default_qdisc 2>/dev/null || echo "unknown")
+
+    local mod_ver
+    mod_ver=$(modinfo tcp_bbr 2>/dev/null | awk '/^version:/ {print $2}')
+    if [[ "$cur_algo" == "bbr" ]]; then
+        if [[ "$mod_ver" == "3" ]] || [[ "$kernel_ver" =~ (bbrv3|joeyblog) ]]; then
+            bbr_status="${green}BBR v3 (已启用)${plain}"
+        else
+            bbr_status="${green}原生 BBR (已启用)${plain}"
+        fi
+    else
+        bbr_status="${yellow}未启用 (${cur_algo})${plain}"
+    fi
+
+    if [[ -f "$XUI_BBR_SYSCTL" ]]; then
+        if grep -q "1073741824" "$XUI_BBR_SYSCTL" 2>/dev/null; then
+            tuning_status="${green}极限测速模式${plain}"
+        elif grep -q "tcp_limit_output_bytes" "$XUI_BBR_SYSCTL" 2>/dev/null; then
+            tuning_status="${green}亚太/跨国 TCP 调优${plain}"
+        else
+            tuning_status="${green}基础 BBR${plain}"
+        fi
+    elif [[ -f "/etc/sysctl.d/99-bbr-x-ui.conf" ]]; then
+        tuning_status="${green}基础 BBR (旧版)${plain}"
+    else
+        tuning_status="${yellow}系统默认配置${plain}"
+    fi
+
+    echo -e "
+╔────────────────────────────────────────────────╗
+│          ${green}3X-UI BBR 网络加速与内核管理${plain}          │
+│────────────────────────────────────────────────│
+│  系统架构: ${green}${arch}${plain}       虚拟环境: ${green}${virt}${plain}
+│  当前内核: ${green}${kernel_ver}${plain}
+│  拥塞算法: ${bbr_status}     队列算法: ${green}${cur_qdisc}${plain}
+│  优化状态: ${tuning_status}
+│────────────────────────────────────────────────│
+│  ${green}【通用调优 (免换内核/支持所有环境)】${plain}          │
+│   ${green}1.${plain} 一键开启系统原生 BBR 加速                   │
+│   ${green}2.${plain} 切换队列调度算法 (FQ / Cake / CoDel)        │
+│   ${green}3.${plain} 应用亚太/跨国线路 TCP 智能调优             │
+│   ${green}4.${plain} 智能带宽与延迟缓冲优化 (结合测速/延迟)     │
+│   ${green}5.${plain} 启用极限测速挑战模式 (榨干带宽吞吐)         │
+│   ${green}6.${plain} 清空网络优化配置 (恢复系统默认参数)         │
+│────────────────────────────────────────────────│
+│  ${green}【BBR v3 内核管理 (仅限 Debian/Ubuntu KVM)】${plain}   │
+│   ${green}7.${plain} 安装 / 更新 BBR v3 最新内核                │
+│   ${green}8.${plain} 选择指定版本安装 BBR v3 内核               │
+│   ${green}9.${plain} 卸载已安装的 BBR v3 内核                   │
+│  ${green}10.${plain} Linux 内核安全加固 (Dirty Frag 缓解)       │
+│────────────────────────────────────────────────│
+│   ${green}0.${plain} 返回主菜单                                │
+╚────────────────────────────────────────────────╝"
+
+    read -rp "请输入选项 [0-10]: " bbr_choice
+    case "$bbr_choice" in
+        0) show_menu ;;
+        1) bbr_enable_native ;;
+        2) bbr_switch_qdisc_menu ;;
+        3) bbr_apply_apac_tuning ;;
+        4) bbr_apply_smart_tuning ;;
+        5) bbr_apply_extreme_tuning ;;
+        6) bbr_clear_all_tuning ;;
+        7) bbr_v3_install_latest ;;
+        8) bbr_v3_install_specific ;;
+        9) bbr_v3_uninstall ;;
+        10) bbr_apply_security_mitigations ;;
         *)
-            echo -e "${red}无效选项，请输入有效序号。${plain}\n"
+            LOGE "无效选项，请输入 0-10 之间的数字！"
             bbr_menu
             ;;
     esac
 }
 
-disable_bbr() {
-
-    if [[ $(sysctl -n net.ipv4.tcp_congestion_control) != "bbr" ]] || [[ ! $(sysctl -n net.core.default_qdisc) =~ ^(fq|cake)$ ]]; then
-        echo -e "${yellow}当前未开启 BBR 加速。${plain}"
-        before_show_menu
-    fi
-
-    if [ -f "/etc/sysctl.d/99-bbr-x-ui.conf" ]; then
-        old_settings=$(head -1 /etc/sysctl.d/99-bbr-x-ui.conf | tr -d '#')
-        sysctl -w net.core.default_qdisc="${old_settings%:*}"
-        sysctl -w net.ipv4.tcp_congestion_control="${old_settings#*:}"
-        rm /etc/sysctl.d/99-bbr-x-ui.conf
-        sysctl --system
-    else
-        # Replace BBR with CUBIC configurations
-        if [ -f "/etc/sysctl.conf" ]; then
-            sed -i 's/net.core.default_qdisc=fq/net.core.default_qdisc=pfifo_fast/' /etc/sysctl.conf
-            sed -i 's/net.ipv4.tcp_congestion_control=bbr/net.ipv4.tcp_congestion_control=cubic/' /etc/sysctl.conf
-            sysctl -p
-        fi
-    fi
-
-    if [[ $(sysctl -n net.ipv4.tcp_congestion_control) != "bbr" ]]; then
-        echo -e "${green}已成功将拥塞控制算法切换为 CUBIC。${plain}"
-    else
-        echo -e "${red}切换拥塞控制算法失败，请检查系统配置。${plain}"
-    fi
+enable_bbr() {
+    bbr_enable_native
 }
 
-enable_bbr() {
-    if [[ $(sysctl -n net.ipv4.tcp_congestion_control) == "bbr" ]] && [[ $(sysctl -n net.core.default_qdisc) =~ ^(fq|cake)$ ]]; then
-        echo -e "${green}BBR 加速已处于开启状态！${plain}"
-        before_show_menu
-    fi
-
-    # Enable BBR
-    if [ -d "/etc/sysctl.d/" ]; then
-        {
-            echo "#$(sysctl -n net.core.default_qdisc):$(sysctl -n net.ipv4.tcp_congestion_control)"
-            echo "net.core.default_qdisc = fq"
-            echo "net.ipv4.tcp_congestion_control = bbr"
-        } > "/etc/sysctl.d/99-bbr-x-ui.conf"
-        if [ -f "/etc/sysctl.conf" ]; then
-            # Backup old settings from sysctl.conf, if any
-            sed -i 's/^net.core.default_qdisc/# &/' /etc/sysctl.conf
-            sed -i 's/^net.ipv4.tcp_congestion_control/# &/' /etc/sysctl.conf
-        fi
-        sysctl --system
-    else
-        sed -i '/net.core.default_qdisc/d' /etc/sysctl.conf
-        sed -i '/net.ipv4.tcp_congestion_control/d' /etc/sysctl.conf
-        echo "net.core.default_qdisc=fq" | tee -a /etc/sysctl.conf
-        echo "net.ipv4.tcp_congestion_control=bbr" | tee -a /etc/sysctl.conf
-        sysctl -p
-    fi
-
-    # Verify that BBR is enabled
-    if [[ $(sysctl -n net.ipv4.tcp_congestion_control) == "bbr" ]]; then
-        echo -e "${green}已成功启用 BBR 加速。${plain}"
-    else
-        echo -e "${red}启用 BBR 失败，请检查系统内核支持情况。${plain}"
-    fi
+disable_bbr() {
+    bbr_clear_all_tuning
 }
 
 update_shell() {
@@ -2970,6 +3646,7 @@ show_usage() {
 │  ${blue}x-ui banlog${plain}                - 查看 Fail2ban 封禁日志           │
 │  ${blue}x-ui update${plain}                - 更新 x-ui 面板                   │
 │  ${blue}x-ui update-all-geofiles${plain}   - 更新所有 Geo 资源文件            │
+│  ${blue}x-ui bbr${plain}                  - BBR 网络加速与内核管理            │
 │  ${blue}x-ui legacy${plain}                - 切换历史版本                     │
 │  ${blue}x-ui install${plain}               - 安装 x-ui 面板                   │
 │  ${blue}x-ui uninstall${plain}             - 卸载 x-ui 面板                   │
@@ -3010,7 +3687,7 @@ show_menu() {
 │  ${green}22.${plain} 系统防火墙端口管理                         │
 │  ${green}23.${plain} SSH 端口转发管理                           │
 │────────────────────────────────────────────────│
-│  ${green}24.${plain} 开启系统 BBR 加速                          │
+│  ${green}24.${plain} BBR 网络加速与内核管理                      │
 │  ${green}25.${plain} 手动更新 Geo 数据文件                      │
 │  ${green}26.${plain} 进行 Ookla 速度测试                        │
 │────────────────────────────────────────────────│
@@ -3154,6 +3831,9 @@ if [[ $# > 0 ]]; then
             ;;
         "uninstall")
             check_install 0 && uninstall 0
+            ;;
+        "bbr")
+            bbr_menu
             ;;
         "update-all-geofiles")
             check_install 0 && update_all_geofiles 0 && restart 0
