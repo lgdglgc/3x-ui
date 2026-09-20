@@ -94,7 +94,7 @@ x-ui
 为了解决自建节点访问 OpenAI / Claude / Gemini / Antigravity 经常遭遇 IP 限制、验证码弹窗或住宅 IP 家宽路由需求，本项目直接内置专用的 AI 规则数据库并实施严格的分流防坑策略：
 
 - **全场景生态覆盖（网页端、桌面端、IDE、API网关）**：
-  - **主流商业 AI**：`OpenAI / ChatGPT`（补全 WebRTC 实时语音端点 `*.livekit.cloud` 与灰度接口 `featuregates.org`、`statsig.com`）、`Anthropic (Claude)`、`Google (Gemini / DeepMind / AI Studio)`、`Microsoft (Copilot)`、`Perplexity`、`Grok (xAI)`、`Poe`。
+  - **主流商业 AI**：`OpenAI / ChatGPT`（补全 WebRTC 实时语音端点 `*.livekit.cloud` 与灰度接口 `featuregates.org`、`statsig.com`）、`Anthropic (Claude)`、`Google (Gemini / DeepMind / AI Studio / Vertex AI / NotebookLM / Jules / Labs / Antigravity 全生态)`、`Microsoft (Copilot)`、`Perplexity`、`Grok (xAI)`、`Poe`。
   - **AI IDE 与编程插件桌面端**：`Antigravity IDE`（全套代码流与沙箱通道）、`Cursor`（包含 blob 与 assets 存储）、`Windsurf (Codeium)`（含核心底层 `exafunction.com`）、`Continue.dev`、`Supermaven`、`Augment Code`、`Zed`。
   - **知名 AI 独立桌面客户端**：`Notion AI`（`notion.so` / `notion.com`）、`Raycast AI`（含 `backend.raycast.com`）、`Chatbox`、`Cherry Studio`、`Jan`、`LobeChat` 等。
   - **主流云端推理与聚合 API 网关**：`OpenRouter`、`Groq`、`Together AI`、`Fireworks AI`、`DeepInfra`、`Mistral AI / Le Chat`、`Cohere`、`Fal.ai`、`Replicate`。
