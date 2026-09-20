@@ -21,6 +21,8 @@
   - [一键全新安装](#1-一键全新安装-install)
   - [一键无损更新](#2-一键无损更新-update)
   - [全中文管理菜单一键修复](#3-全中文管理菜单一键修复-restore-menu)
+  - [AI 分流规则库一键刷新 (推荐方案 A)](#4-ai-分流规则库一键刷新-方案-a-最推荐)
+  - [终端呼出管理菜单](#5-终端呼出管理菜单)
 - [主要优化与核心特性](#-主要优化与核心特性)
   - [1. 专属 AI 分流规则库 (geosite_myai.dat)](#1-专属-ai-分流规则库-geosite_myaidat)
   - [2. 深度中文汉化与纯净体验](#2-深度中文汉化与纯净体验)
@@ -68,7 +70,14 @@ bash <(curl -Ls https://raw.githubusercontent.com/lgdglgc/3x-ui/main/update.sh)
 curl -fLRo /usr/bin/x-ui https://raw.githubusercontent.com/lgdglgc/3x-ui/main/x-ui.sh && cp -f /usr/bin/x-ui /usr/local/x-ui/x-ui.sh && chmod +x /usr/bin/x-ui /usr/local/x-ui/x-ui.sh
 ```
 
-### 4. 终端呼出管理菜单
+### 4. AI 分流规则库一键刷新 (方案 A 最推荐)
+当发现有新出的 AI 独立域名或本项目云端规则更新时，执行以下命令即可一键拉取最新规则并自动平滑重启生效：
+```bash
+curl -fLRo /usr/local/x-ui/bin/geosite_myai.dat https://raw.githubusercontent.com/lgdglgc/3x-ui/main/geosite_myai.dat && systemctl restart x-ui
+```
+> **提示**：也可以在终端直接执行 `x-ui update-all-geofiles` 更新全部规则文件。
+
+### 5. 终端呼出管理菜单
 安装或修复后，在终端随时输入以下命令即可打开控制面板菜单：
 ```bash
 x-ui
@@ -227,6 +236,20 @@ x-ui
 本项目的证书申请工具已内置端口冲突解决机制：
 - 若运行有 Nginx/Apache/Caddy/OpenResty 等，脚本会自动安全暂停它们并在验证完成后自动恢复。
 - 若有其他未知程序占用了 80 端口，脚本会显示占用进程的 PID 并询问是否强制释放，输入 `y` 即可自动清除阻碍。
+
+### Q5: 分流规则需要定时更新吗？如何进行维护？
+**核心结论：不需要频繁定时更新。平时无需理会，按需刷新即可。**
+- **无需频繁更新的原因**：
+  1. 规则库绝大部分采用“根域名匹配（RootDomain）”（如 `openai.com`、`claude.ai`、`antigravity.google`）。各大平台内部即便新增了几十个多级子域名，也会被 100% 自动匹配，完全不需要更新规则。
+  2. 头部 AI 巨头的核心主域名极其稳定，数年内不会变更。
+  3. Xray 仅在启动初始化时加载规则库，频繁自动更新并重启会导致当时正在运行的连接瞬断。
+- **方案 A（最推荐）：平时不折腾，按需一键刷新**
+  只有当官方推出了全新的独立新品牌域名（如当年从 `openai.com` 拆出 `chatgpt.com` / `sora.com`）、或市面上出现爆火的新客户端、或本项目云端推送了优化规则时，在终端执行一条命令即可瞬间更新并自动重启生效：
+  ```bash
+  curl -fLRo /usr/local/x-ui/bin/geosite_myai.dat https://raw.githubusercontent.com/lgdglgc/3x-ui/main/geosite_myai.dat && systemctl restart x-ui
+  ```
+  或者在终端使用内置命令更新全部规则：`x-ui update-all-geofiles`。
+- **自动跟随面板更新**：本项目的 `update.sh` 在更新面板时，已自动内置拉取最新 `geosite_myai.dat` 的逻辑，因此每次更新面板都会自动保持最新。
 
 ---
 
