@@ -1,4 +1,4 @@
-# geosite_ping.dat Domain List (285 total rules)
+# geosite_ping.dat Domain List (308 total rules)
 # IP Quality / Fraud Score / Purity / Ping / ASN / DNS Leaks (NO Speedtest)
 
 2ip.io
@@ -12,6 +12,8 @@ api.ip.sb
 api.ipify.org
 apiip.net
 apivoid.com
+apnic.net
+arin.net
 barracudacentral.org
 bgp.he.net
 bgp.tools
@@ -19,6 +21,7 @@ bigdatacloud.net
 browseraudit.com
 browserleaks.com
 check-host.net
+check.place
 checkip.amazonaws.com
 checkip.com.vn
 checkip.dyndns.org
@@ -26,6 +29,7 @@ checkip.org
 checkip.ru
 checkip.sh
 checkmyip.now
+cip.cc
 country.is
 criminalip.io
 curlmyip.net
@@ -33,12 +37,14 @@ dadata.ru
 db-ip.com
 dns.ping.pe
 dnscheck.tools
+dnsleak.com
 dnsleaktest.com
 extreme-ip-lookup.com
 find-my-ip.com
 find-my-ip.net
 findip.net
 flagfox.net
+focsec.com
 fraudguard.io
 fraudlogix.com
 freegeoip.app
@@ -64,6 +70,7 @@ ifconfig.co
 ifconfig.es
 ifconfig.io
 ifconfig.me
+incolumitas.com
 infosniper.net
 ip-adress.com
 ip-api.com
@@ -71,14 +78,19 @@ ip-api.io
 ip-api.ru
 ip-check.info
 ip-score.com
+ip.cat
 ip.check.place
+ip.guide
 ip.hetzner.com
 ip.mail.ru
 ip.me
 ip.nic.ru
+ip.p3terx.com
 ip.pe.kr
 ip.sb
+ip.skk.moe
 ip.tyk.nu
+ip138.com
 ip2c.org
 ip2location.com
 ip2location.io
@@ -98,6 +110,7 @@ ipapi.is
 ipbase.com
 ipbot.com
 ipcalf.com
+ipchaxun.com
 ipcheck.ing
 ipcheck.net
 ipchicken.com
@@ -107,6 +120,7 @@ ipfind.io
 ipfinder.io
 ipgeo.vercel.app
 ipgeolocation.io
+iphey.com
 ipify.cn
 ipify.org
 ipinfo.app
@@ -135,12 +149,14 @@ ipstack.com
 ipv4-internet.yandex.net
 ipv4.internet.yandex.net
 ipv6-internet.yandex.net
+ipv6-test.com
 ipv6.internet.yandex.net
 ipv6ready.me
 ipverify.com
 ipw.cn
 ipwho.is
 ipwhois.io
+ipx.ac
 ipxapi.com
 itdog.cn
 jsonip.com
@@ -148,6 +164,7 @@ l2.io
 maxmind.com
 mon-ip.com
 monip.org
+mullvad.net
 multirbl.valli.org
 my-ip.io
 myexternalip.com
@@ -165,6 +182,7 @@ myip.fi
 myip.ge
 myip.hk
 myip.id
+myip.ipip.net
 myip.is
 myip.kz
 myip.la
@@ -195,6 +213,7 @@ mylocation.org
 nodedata.io
 nossl.sh
 osint.sh
+peeringdb.com
 ping.chinaz.com
 ping.pe
 ping.sx
@@ -204,8 +223,10 @@ port.ping.pe
 projecthoneypot.org
 proxycheck.io
 public-us-pingsx.api.clonoth.com
+radb.net
 realip.cc
 reallyfreegeoip.org
+ripe.net
 scamalytics.com
 seeip.org
 showip.net
@@ -215,6 +236,7 @@ sixte.st
 sorbs.net
 spamhaus.org
 spur.us
+stat.ripe.net
 sxgeo.city
 sypexgeo.net
 talosintelligence.com
@@ -274,6 +296,7 @@ whois.pconline.com.cn
 whoisxmlapi.com
 wieistmeineip.de
 wtfismyip.com
+zxinc.org
 full:checkip.amazonaws.com
 full:checkip.dyn.com
 full:checkip.dyndns.org

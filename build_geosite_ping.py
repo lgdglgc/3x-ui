@@ -27,6 +27,12 @@ BASELINE_DATA: Dict[str, List[str]] = {
         "scamalytics.com",
         "ipqualityscore.com",
         "ipcheck.ing",
+        "iphey.com",
+        "incolumitas.com",
+        "ipx.ac",
+        "focsec.com",
+        "check.place",
+        "ip.check.place",
         "whoer.net",
         "whoerip.com",
         "pixelscan.net",
@@ -40,7 +46,6 @@ BASELINE_DATA: Dict[str, List[str]] = {
         "ip2location.com",
         "ip2location.io",
         "ipapi.is",
-        "ip.check.place",
     ],
     # 2. 网络连通性、Ping 与 TCPing 诊断工具
     "ping-tools": [
@@ -61,11 +66,13 @@ BASELINE_DATA: Dict[str, List[str]] = {
     "leak-test": [
         "dnsleaktest.com",
         "dnscheck.tools",
+        "dnsleak.com",
         "ipleak.net",
         "ipleak.org",
+        "ipleak.com",
+        "mullvad.net",
         "browserleaks.com",
         "webrtc.org",
-        "ipleak.com",
         "browseraudit.com",
     ],
     # 4. IP 属性、ASN、BGP 与权威商业数据库
@@ -75,8 +82,15 @@ BASELINE_DATA: Dict[str, List[str]] = {
         "ip-api.com",
         "ipapi.co",
         "ipapi.com",
+        "ip.guide",
         "bgp.tools",
         "bgp.he.net",
+        "peeringdb.com",
+        "radb.net",
+        "stat.ripe.net",
+        "ripe.net",
+        "apnic.net",
+        "arin.net",
         "maxmind.com",
         "db-ip.com",
         "ipdata.co",
@@ -94,9 +108,16 @@ BASELINE_DATA: Dict[str, List[str]] = {
         "ipfinder.io",
         "abstractapi.com",
         "extreme-ip-lookup.com",
+        "zxinc.org",
     ],
     # 5. 轻量 IP 出口回显（0 流量、纯文本快速探测）
     "ip-echo": [
+        "cip.cc",
+        "ip.skk.moe",
+        "ip.p3terx.com",
+        "ip138.com",
+        "ipchaxun.com",
+        "ip.cat",
         "ip.sb",
         "api.ip.sb",
         "icanhazip.com",
@@ -120,6 +141,7 @@ BASELINE_DATA: Dict[str, List[str]] = {
         "iplark.com",
         "myexternalip.com",
         "showmyip.com",
+        "myip.ipip.net",
     ],
     # 6. 黑名单与网络滥用查询
     "abuse-blacklist": [
@@ -134,6 +156,7 @@ BASELINE_DATA: Dict[str, List[str]] = {
     # 7. IPv6 连通性测试（纯诊断无测速）
     "ipv6-test": [
         "test-ipv6.com",
+        "ipv6-test.com",
         "test-ipv6.cn",
         "testipv6.cn",
         "ipv6ready.me",
