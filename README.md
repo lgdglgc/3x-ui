@@ -34,11 +34,11 @@
 - [核心优化全景对比](#-核心优化全景对比定制加固版-vs-官方原版)
 - [版本规范与设计原则](#-版本规范与设计原则)
 - [快速开始 (一键部署与维护)](#-快速开始)
-  - [一键全新安装](#1-一键全新安装-install)
-  - [一键无损更新](#2-一键无损更新-update)
-  - [全中文管理菜单一键修复](#3-全中文管理菜单一键修复-restore-menu)
-  - [专属规则库一键拉取 (AI 规则 / 纯 IP 质量规则)](#4-专属分流规则库一键拉取-pull-dat-rules)
-  - [终端呼出管理菜单](#5-终端呼出管理菜单)
+  - [一键全新安装 📋](#1-一键全新安装-install-)
+  - [一键无损更新 📋](#2-一键无损更新-update-)
+  - [全中文管理菜单一键修复 📋](#3-全中文管理菜单一键修复-restore-menu-)
+  - [专属规则库一键拉取 (AI 规则 / 纯 IP 质量规则) 📋](#4-专属分流规则库一键拉取-pull-dat-rules-)
+  - [终端呼出管理菜单 📋](#5-终端呼出管理菜单-)
 - [主要优化与核心特性](#-主要优化与核心特性)
   - [1. 专属 AI 分流规则库 (geosite_myai.dat)](#1-专属-ai-分流规则库-geosite_myaidat)
   - [2. 纯 IP 质量与欺诈分检测规则库 (geosite_ping.dat)](#2-纯-ip-质量与欺诈分检测规则库-geosite_pingdat)
@@ -71,26 +71,28 @@
 
 ## 🚀 快速开始
 
-### 1. 一键全新安装 (Install)
+> 💡 **一键复制技巧**：鼠标移动到任意代码框右上角，点击 GitHub 官方自带的 **复制按钮 (📋 Copy)** 即可瞬间完成整行命令拷贝，无需手动拖选。
+
+### 1. 一键全新安装 (Install) 📋
 全新服务器推荐直接执行以下一键安装命令：
 ```bash
 bash <(curl -Ls https://raw.githubusercontent.com/lgdglgc/3x-ui/main/install.sh)
 ```
-> **提示**：安装过程中提示选择版本时，直接回车即可部署推荐的 `3.8.5` 面板与 `v26.6.27` Xray 核心。
+> **提示**：安装过程中提示选择版本时，直接按回车即可部署推荐的 `3.8.5` 面板与 `v26.6.27` Xray 核心。
 
-### 2. 一键无损更新 (Update)
+### 2. 一键无损更新 (Update) 📋
 若需要更新已有面板，且完整保留所有节点、证书与配置数据：
 ```bash
 bash <(curl -Ls https://raw.githubusercontent.com/lgdglgc/3x-ui/main/update.sh)
 ```
 
-### 3. 全中文管理菜单一键修复 (Restore Menu)
+### 3. 全中文管理菜单一键修复 (Restore Menu) 📋
 如果您的终端管理菜单之前意外变回了官方英文原版，粘贴以下命令即可一键恢复全中文：
 ```bash
 curl -fLRo /usr/bin/x-ui https://raw.githubusercontent.com/lgdglgc/3x-ui/main/x-ui.sh && cp -f /usr/bin/x-ui /usr/local/x-ui/x-ui.sh && chmod +x /usr/bin/x-ui /usr/local/x-ui/x-ui.sh
 ```
 
-### 4. 专属分流规则库一键拉取 (Pull Dat Rules)
+### 4. 专属分流规则库一键拉取 (Pull Dat Rules) 📋
 
 #### (1) AI 专属分流规则库 (`geosite_myai.dat`)
 当发现有新出的 AI 独立域名或本项目云端规则更新时，执行以下命令即可一键拉取最新规则并自动平滑重启生效：
@@ -105,7 +107,7 @@ curl -fLRo /usr/local/x-ui/bin/geosite_ping.dat https://raw.githubusercontent.co
 ```
 > **提示**：也可以在终端直接执行 `x-ui update-all-geofiles` 一键更新包括 `geosite_myai.dat` 与 `geosite_ping.dat` 在内的全部规则文件。
 
-### 5. 终端呼出管理菜单
+### 5. 终端呼出管理菜单 📋
 安装或修复后，在终端随时输入以下命令即可打开控制面板菜单：
 ```bash
 x-ui
