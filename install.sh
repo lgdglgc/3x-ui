@@ -1520,6 +1520,12 @@ install_x-ui() {
         curl -fLRo bin/geosite_myai.dat https://raw.githubusercontent.com/lgdglgc/3x-ui/main/geosite_myai.dat 2>/dev/null || true
     fi
 
+    # Ensure geosite_ping.dat is present
+    if [[ ! -f "bin/geosite_ping.dat" ]]; then
+        echo -e "${green}正在下载 IP 质量与 Ping 诊断规则数据库 geosite_ping.dat...${plain}"
+        curl -fLRo bin/geosite_ping.dat https://raw.githubusercontent.com/lgdglgc/3x-ui/main/geosite_ping.dat 2>/dev/null || true
+    fi
+
     # Update x-ui cli and set permission
     mv -f /usr/bin/x-ui-temp /usr/bin/x-ui
     chmod +x /usr/bin/x-ui

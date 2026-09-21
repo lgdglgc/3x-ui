@@ -1265,6 +1265,12 @@ update_x-ui() {
         ${curl_bin} -fLRo bin/geosite_myai.dat https://raw.githubusercontent.com/lgdglgc/3x-ui/main/geosite_myai.dat > /dev/null 2>&1 || true
     fi
 
+    # Ensure geosite_ping.dat is present
+    if [[ ! -f "bin/geosite_ping.dat" ]]; then
+        echo -e "${green}正在下载 IP 质量与 Ping 诊断规则数据库 geosite_ping.dat...${plain}"
+        ${curl_bin} -fLRo bin/geosite_ping.dat https://raw.githubusercontent.com/lgdglgc/3x-ui/main/geosite_ping.dat > /dev/null 2>&1 || true
+    fi
+
     echo -e "${green}正在下载并安装 x-ui.sh 脚本...${plain}"
     ${curl_bin} -fLRo /usr/bin/x-ui https://raw.githubusercontent.com/lgdglgc/3x-ui/main/x-ui.sh > /dev/null 2>&1
     if [[ $? -ne 0 ]]; then

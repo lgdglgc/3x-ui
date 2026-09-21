@@ -22,15 +22,16 @@
   - [一键全新安装](#1-一键全新安装-install)
   - [一键无损更新](#2-一键无损更新-update)
   - [全中文管理菜单一键修复](#3-全中文管理菜单一键修复-restore-menu)
-  - [AI 分流规则库一键刷新 (推荐方案 A)](#4-ai-分流规则库一键刷新-方案-a-最推荐)
+  - [专属规则库一键拉取 (AI 规则 / 纯 IP 质量规则)](#4-专属分流规则库一键拉取-pull-dat-rules)
   - [终端呼出管理菜单](#5-终端呼出管理菜单)
 - [主要优化与核心特性](#-主要优化与核心特性)
   - [1. 专属 AI 分流规则库 (geosite_myai.dat)](#1-专属-ai-分流规则库-geosite_myaidat)
-  - [2. 深度中文汉化与纯净体验](#2-深度中文汉化与纯净体验)
-  - [3. Xray 内核版本加固与客户端兼容](#3-xray-内核版本加固与客户端兼容)
-  - [4. 生产级 SSL 证书申请与端口容灾](#4-生产级-ssl-证书申请与端口容灾)
-  - [5. 防英文覆盖的更新闭环机制](#5-防英文覆盖的更新闭环机制)
-  - [6. BBR 网络加速与内核管理体系 (BBR v3 / 智能调优)](#6-bbr-网络加速与内核管理体系-bbr-v3--智能调优)
+  - [2. 纯 IP 质量与欺诈分检测规则库 (geosite_ping.dat)](#2-纯-ip-质量与欺诈分检测规则库-geosite_pingdat)
+  - [3. 深度中文汉化与纯净体验](#3-深度中文汉化与纯净体验)
+  - [4. Xray 内核版本加固与客户端兼容](#4-xray-内核版本加固与客户端兼容)
+  - [5. 生产级 SSL 证书申请与端口容灾](#5-生产级-ssl-证书申请与端口容灾)
+  - [6. 防英文覆盖的更新闭环机制](#6-防英文覆盖的更新闭环机制)
+  - [7. BBR 网络加速与内核管理体系 (BBR v3 / 智能调优)](#7-bbr-网络加速与内核管理体系-bbr-v3--智能调优)
 - [终端管理菜单总览](#-终端管理菜单总览)
 - [命令行子命令速查](#-命令行子命令速查)
 - [常见问题与实战指南 (FAQ)](#-常见问题与实战指南-faq)
@@ -47,6 +48,7 @@
 | **默认面板版本** | **`3.8.5`** | 锁定当前功能最完备、经实测最稳定的面板版本 |
 | **默认 Xray 内核** | **`v26.6.27`** | 锁定黄金稳定版内核，避开新版协议解析 Bug，完美兼容全平台客户端 |
 | **AI 路由规则库** | **`geosite_myai.dat`** | 原生预装，主流 AI（ChatGPT/Claude/Gemini 等）一键分流至住宅/解锁节点 |
+| **IP 质量诊断库** | **`geosite_ping.dat`** | 原生预装，纯 IP 质量/欺诈分/Ping 诊断（严格剔除测速站，0 流量损耗） |
 | **网络加速体系** | **BBR v3 + 智能 TCP 调优** | 双层加速体系：通用免换内核 BBR/队列热切 + Debian/Ubuntu 专属 BBR v3 主线内核管理 |
 | **交互式确认** | 支持一键回车部署 | 安装、更新及版本切换均提供默认推荐值，直接按回车即可极速部署 |
 
@@ -73,12 +75,20 @@ bash <(curl -Ls https://raw.githubusercontent.com/lgdglgc/3x-ui/main/update.sh)
 curl -fLRo /usr/bin/x-ui https://raw.githubusercontent.com/lgdglgc/3x-ui/main/x-ui.sh && cp -f /usr/bin/x-ui /usr/local/x-ui/x-ui.sh && chmod +x /usr/bin/x-ui /usr/local/x-ui/x-ui.sh
 ```
 
-### 4. AI 分流规则库一键刷新 (方案 A 最推荐)
+### 4. 专属分流规则库一键拉取 (Pull Dat Rules)
+
+#### (1) AI 专属分流规则库 (`geosite_myai.dat`)
 当发现有新出的 AI 独立域名或本项目云端规则更新时，执行以下命令即可一键拉取最新规则并自动平滑重启生效：
 ```bash
 curl -fLRo /usr/local/x-ui/bin/geosite_myai.dat https://raw.githubusercontent.com/lgdglgc/3x-ui/main/geosite_myai.dat && systemctl restart x-ui
 ```
-> **提示**：也可以在终端直接执行 `x-ui update-all-geofiles` 更新全部规则文件。
+
+#### (2) 纯 IP 质量 / 欺诈分 / Ping 诊断规则库 (`geosite_ping.dat`)
+专用于出口节点纯净度体检（如 `ping0.cc`、`scamalytics.com`、`ipqualityscore.com`、`whoer.net` 等），**已严格过滤排除所有测速网站**，防止跑测速跑爆流量：
+```bash
+curl -fLRo /usr/local/x-ui/bin/geosite_ping.dat https://raw.githubusercontent.com/lgdglgc/3x-ui/main/geosite_ping.dat && systemctl restart x-ui
+```
+> **提示**：也可以在终端直接执行 `x-ui update-all-geofiles` 一键更新包括 `geosite_myai.dat` 与 `geosite_ping.dat` 在内的全部规则文件。
 
 ### 5. 终端呼出管理菜单
 安装或修复后，在终端随时输入以下命令即可打开控制面板菜单：
@@ -120,18 +130,25 @@ x-ui
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### 2. 深度中文汉化与纯净体验
+### 2. 纯 IP 质量与欺诈分检测规则库 (`geosite_ping.dat`)
+专为**节点纯净度体检、欺诈分（Fraud Score）测定、伪装度分析与网络延迟诊断**量身打造的轻量级规则库：
+- **🚫 严格剔除测速大流量网站**：彻底排除 `speedtest.net`、`fast.com`、`nperf.com`、`librespeed.org` 等瞬时耗费上百兆流量的带宽测试平台，**彻底杜绝因测速跑爆昂贵的家宽限额或 VPS 流量**。
+- **🎯 深度收录权威纯净度与欺诈分平台**：全面补齐 `ping0.cc`、`scamalytics.com`（权威风控欺诈分）、`ipqualityscore.com`（IPQS 企业级风控）、`whoer.net`（伪装度 100% 测试）、`browserleaks.com`（WebRTC/指纹防泄漏）、`pixelscan.net` 等。
+- **📡 网络连通性与 Ping 诊断**：收录 `ping.pe`、`ping.sx`、`itdog.cn`、`tcping.cn`、`check-host.net` 等常用跨国延迟与端口可达性探测端点。
+- **🌐 官方兼容与细分 Tag 支持**：全面整合 MetaCubeX 官方 `category-ip-geo-detect`（238 个海外与国内 IP 探测 API），并提供 `ext:geosite_ping.dat:ping`、`ext:geosite_ping.dat:fraud`、`ext:geosite_ping.dat:leak`、`ext:geosite_ping.dat:ping-tools` 等灵活标签。
+
+### 3. 深度中文汉化与纯净体验
 - **300+ 处交互提示全量精翻**：从安装脚本提示、报错告警，到终端交互式菜单、配置重置提示，均以纯正规范的中文表达呈现。
 - **Go 后端控制台日志汉化**：全面汉化 `main.go` 命令行参数帮助（`-help` / `-v` / `-reset` 等）、数据库迁移升级、端口监听及两步验证重置日志。
 - **环境默认适配**：默认界面语言与 Telegram 消息模板固定为 `zh-CN`，系统默认时区调整为 `Asia/Shanghai`。
 - **独立纯净无外链**：彻底剥离上游项目广告、外链赞助入口（Donate）及外部 Telegram 群组弹窗，适合生产及自托管使用。
 
-### 3. Xray 内核版本加固与客户端兼容
+### 4. Xray 内核版本加固与客户端兼容
 - **锁定 LTS 稳定内核 (`v26.6.27`)**：
   实测表明，Xray 在升级至 `v26.7.x` ~ `v26.9.x` 过程中曾引入部分新协议变更与配置结构调整，易导致配置解析失败或引发 **Clash Meta (Mihomo) / Clash Verge / Sing-box / Shadowrocket** 等客户端兼容性异常。
 - 本项目锁定经大量生产验证最稳固的 `v26.6.27` 为推荐版本，安装脚本中限制误升级，确保全生态客户端即连即用、无感知穿透。
 
-### 4. 生产级 SSL 证书申请与端口容灾
+### 5. 生产级 SSL 证书申请与端口容灾
 对 `acme.sh` 独立证书申请流程做了全面加固：
 - **80 端口占用智能检测与优雅停止**：申请证书时，自动探测并临时挂起占用 80 端口的 Web 服务（支持 **Nginx、OpenResty、Apache2、Httpd、Caddy、Tengine**）。
 - **占用进程强制释放**：检测到顽固进程占用端口时，支持用户选择自动调用 `fuser` 强制释放端口，确保验证服务正常启动。
@@ -139,12 +156,12 @@ x-ui
 - **100% 状态恢复保障 (Trap 机制)**：无论是证书申请成功、验证失败还是中途被 `Ctrl + C` 中断，脚本都能确保将系统防火墙规则及被暂停的 Web 服务完全恢复原状。
 - **ZeroSSL 自动灾备**：当 Let's Encrypt CA 故障或达到限额时，脚本自动平滑切换至 ZeroSSL 备用 CA 申请。
 
-### 5. 防英文覆盖的更新闭环机制
+### 6. 防英文覆盖的更新闭环机制
 针对原版“一更新面板管理脚本就变回英文”的顽疾，本项目做了全链路防覆盖机制：
 - **本地脚本双向同步**：更新和安装时，同步更新 `/usr/bin/x-ui` 与 `/usr/local/x-ui/x-ui.sh`，防止解压上游压缩包时原版英文脚本残留。
 - **二进制更新调用重定向**：安装时自动对面板二进制的后台更新接口打补丁，即便通过 Web 后台点击【更新面板】，也会请求定制汉化源，彻底告别英文回退。
 
-### 6. BBR 网络加速与内核管理体系 (BBR v3 / 智能调优)
+### 7. BBR 网络加速与内核管理体系 (BBR v3 / 智能调优)
 告别传统脚本简单的两行 sysctl 开启方式，本项目深度重构并集成了企业级 **BBR 网络加速与内核管理子系统**（输入 `x-ui bbr` 随时唤起独立管理菜单），提供兼顾**极致安全**与**极速性能**的双层加速架构：
 
 - **双层加速架构设计**：
@@ -232,7 +249,7 @@ x-ui
 | `x-ui banlog` | 查看 Fail2ban 防爆破封禁日志 |
 | `x-ui update` | 执行面板更新流程（保留已有数据） |
 | `x-ui legacy` | 交互式切换历史面板及 Xray 版本 |
-| `x-ui update-all-geofiles` | 更新包括 `geosite_myai.dat` 在内的全部规则文件 |
+| `x-ui update-all-geofiles` | 一键更新包括 `geosite_myai.dat` 与 `geosite_ping.dat` 在内的全部规则文件 |
 | `x-ui uninstall` | 卸载面板及相关服务 |
 
 ---
@@ -260,19 +277,23 @@ x-ui
 - 若运行有 Nginx/Apache/Caddy/OpenResty 等，脚本会自动安全暂停它们并在验证完成后自动恢复。
 - 若有其他未知程序占用了 80 端口，脚本会显示占用进程的 PID 并询问是否强制释放，输入 `y` 即可自动清除阻碍。
 
-### Q5: 分流规则需要定时更新吗？如何进行维护？
+### Q5: 分流规则需要定时更新吗？如何进行单独维护与拉取？
 **核心结论：不需要频繁定时更新。平时无需理会，按需刷新即可。**
 - **无需频繁更新的原因**：
   1. 规则库绝大部分采用“根域名匹配（RootDomain）”（如 `openai.com`、`claude.ai`、`antigravity.google`）。各大平台内部即便新增了几十个多级子域名，也会被 100% 自动匹配，完全不需要更新规则。
   2. 头部 AI 巨头的核心主域名极其稳定，数年内不会变更。
   3. Xray 仅在启动初始化时加载规则库，频繁自动更新并重启会导致当时正在运行的连接瞬断。
-- **方案 A（最推荐）：平时不折腾，按需一键刷新**
-  只有当官方推出了全新的独立新品牌域名（如当年从 `openai.com` 拆出 `chatgpt.com` / `sora.com`）、或市面上出现爆火的新客户端、或本项目云端推送了优化规则时，在终端执行一条命令即可瞬间更新并自动重启生效：
-  ```bash
-  curl -fLRo /usr/local/x-ui/bin/geosite_myai.dat https://raw.githubusercontent.com/lgdglgc/3x-ui/main/geosite_myai.dat && systemctl restart x-ui
-  ```
-  或者在终端使用内置命令更新全部规则：`x-ui update-all-geofiles`。
-- **自动跟随面板更新**：本项目的 `update.sh` 在更新面板时，已自动内置拉取最新 `geosite_myai.dat` 的逻辑，因此每次更新面板都会自动保持最新。
+- **单独拉取各 .dat 规则库命令**：
+  - **单独拉取 AI 专属规则库 (`geosite_myai.dat`)**：
+    ```bash
+    curl -fLRo /usr/local/x-ui/bin/geosite_myai.dat https://raw.githubusercontent.com/lgdglgc/3x-ui/main/geosite_myai.dat && systemctl restart x-ui
+    ```
+  - **单独拉取 IP 质量与 Ping 诊断规则库 (`geosite_ping.dat`)**：
+    ```bash
+    curl -fLRo /usr/local/x-ui/bin/geosite_ping.dat https://raw.githubusercontent.com/lgdglgc/3x-ui/main/geosite_ping.dat && systemctl restart x-ui
+    ```
+  - **终端一键全部更新**：直接在服务器输入 `x-ui update-all-geofiles`。
+- **自动跟随面板更新**：本项目的 `update.sh` 在更新面板时，已自动内置拉取最新 `geosite_myai.dat` 与 `geosite_ping.dat` 的逻辑，因此每次更新面板都会自动保持最新。
 
 ### Q6: 访问 Google Gemini 提示“检测到异常流量 (IP 地址：A ≠ B)”是什么原因？如何彻底解决？
 #### 1. 现象本质分析
@@ -326,6 +347,14 @@ IP 地址：103.11.76.42 ≠ 104.28.227.187 时间：2026-09-20T10:13:59Z 网址
   - **核心优势**：享受 Google BBR v3 最前沿的主线内核算法，在高丢包和抗抖动场景下性能优势显著。
 - **场景 3：测速跑分或极客玩家**：
   - 可尝试选项 `5. 启用极限测速挑战模式`，压榨上行带宽极致性能。
+
+### Q8: 如何在 3X-UI 面板中使用 `geosite_ping.dat` 进行节点纯净度体检？
+1. 登录 3X-UI 网页后台，点击 **【面板设置】 ➔ 【路由设置】**。
+2. 在路由规则列表中添加一条新规则：
+   - **域名匹配 (geosite)**：输入 `ext:geosite_ping.dat:ping`（或仅测风控欺诈分填 `ext:geosite_ping.dat:fraud`）
+   - **出站标签 (Outbound)**：选择您希望体检的目标节点出站（例如落地节点或美国家宽节点）
+3. 保存并点击【重启面板】生效。
+4. 此后在浏览器中打开 `ping0.cc`、`scamalytics.com`、`whoer.net` 等网站体检时，流量均精准通过该节点路由，且完全不会触发任何消耗大量带宽的测速服务。
 
 ---
 

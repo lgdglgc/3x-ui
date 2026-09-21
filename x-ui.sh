@@ -1772,6 +1772,7 @@ update_all_geofiles() {
     update_geofiles "IR"
     update_geofiles "RU"
     update_geofiles "MYAI"
+    update_geofiles "PING"
 }
 
 update_geofiles() {
@@ -1793,6 +1794,11 @@ update_geofiles() {
                 https://raw.githubusercontent.com/lgdglgc/3x-ui/main/geosite_myai.dat
             return 0
             ;;
+        "PING")
+            curl -fLRo ${xui_folder}/bin/geosite_ping.dat \
+                https://raw.githubusercontent.com/lgdglgc/3x-ui/main/geosite_ping.dat
+            return 0
+            ;;
     esac
     for dat in "${dat_files[@]}"; do
         # Remove suffix for remote filename (e.g., geoip_IR -> geoip)
@@ -1807,9 +1813,10 @@ update_geo() {
     echo -e "${green}\t2.${plain} 伊朗地区规则库 chocolate4u (geoip_IR.dat, geosite_IR.dat)"
     echo -e "${green}\t3.${plain} 俄罗斯地区规则库 runetfreedom (geoip_RU.dat, geosite_RU.dat)"
     echo -e "${green}\t4.${plain} AI 专属分流规则库 MyAI (geosite_myai.dat)"
-    echo -e "${green}\t5.${plain} 更新全部规则库 (包含 MyAI 及所有规则)"
+    echo -e "${green}\t5.${plain} 纯 IP 质量/欺诈分/Ping 诊断库 (geosite_ping.dat)"
+    echo -e "${green}\t6.${plain} 更新全部规则库 (包含 MyAI、Ping 及所有规则)"
     echo -e "${green}\t0.${plain} 返回主菜单"
-    read -rp "请输入选项序号 [0-5]: " choice
+    read -rp "请输入选项序号 [0-6]: " choice
 
     case "$choice" in
         0)
@@ -1836,6 +1843,11 @@ update_geo() {
             restart
             ;;
         5)
+            update_geofiles "PING"
+            echo -e "${green}Ping & IP 质量诊断规则库更新成功！${plain}"
+            restart
+            ;;
+        6)
             update_all_geofiles
             echo -e "${green}所有 Geo 资源文件已成功更新！${plain}"
             restart
